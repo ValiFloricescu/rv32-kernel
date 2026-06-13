@@ -73,28 +73,37 @@ module tb_cosim;
         rst_n = 1'b0; @(negedge clk); @(negedge clk); rst_n = 1'b1;
     end
 
+    reg        done = 1'b0;
+    reg [31:0] last_pc = 32'hffffffff;
+    wire [31:0] retire_pc = dut.memwb_pc4 - 32'd4;
+
     // --- log de commit: o linie per instructiune retrasa ---
-    always @(posedge clk) if (rst_n) begin
+    // Oprire la BUCLA TERMINALA: testele arch-test se incheie cu o instructiune
+    // care sare la ea insasi (j . / beq x0,x0,0). Cand acelasi PC se retrage de
+    // doua ori la rand, am ajuns la final -> oprim (ca executia sa coincida cu Spike,
+    // fara sa depindem de protocolul HTIF complet).
+    always @(posedge clk) if (rst_n && !done) begin
         if (dut.memwb_valid) begin
-            if (dut.memwb_reg_write && (dut.memwb_rd != 5'd0))
-                $fwrite(tf, "%08x %08x %02d %08x\n",
-                        dut.memwb_pc4 - 32'd4, dut.memwb_instr,
-                        dut.memwb_rd, dut.wb_data);
-            else
-                $fwrite(tf, "%08x %08x -- --------\n",
-                        dut.memwb_pc4 - 32'd4, dut.memwb_instr);
+            if (retire_pc == last_pc) begin
+                $display("[COSIM] bucla terminala la pc=%08x dupa %0d instr.", retire_pc, cyc);
+                done <= 1'b1; $fclose(tf); $finish;
+            end else begin
+                if (dut.memwb_reg_write && (dut.memwb_rd != 5'd0))
+                    $fwrite(tf, "%08x %08x %02d %08x\n",
+                            retire_pc, dut.memwb_instr, dut.memwb_rd, dut.wb_data);
+                else
+                    $fwrite(tf, "%08x %08x -- --------\n",
+                            retire_pc, dut.memwb_instr);
+                last_pc <= retire_pc;
+            end
         end
     end
 
-    always @(posedge clk) if (rst_n) begin
+    always @(posedge clk) if (rst_n && !done) begin
         cyc <= cyc + 1;
-        if (dmem_we && (didx & (WORDS-1)) == ((`TOHOST >> 2) & (WORDS-1))) begin
-            $display("[COSIM] halt la tohost dupa %0d cicluri", cyc);
-            $fclose(tf); $finish;
-        end
         if (cyc > `MAX_CYCLES) begin
             $display("[COSIM] STOP (timeout %0d cicluri)", cyc);
-            $fclose(tf); $finish;
+            done <= 1'b1; $fclose(tf); $finish;
         end
     end
 endmodule
