@@ -21,8 +21,8 @@ else echo "EROARE: nu gasesc yosys/yowasp-yosys in PATH"; exit 2; fi
 
 # fisierele nucleului (sintetizabile) + top-ul fiecaruia
 CORE="rtl/alu.v rtl/control.v rtl/csr.v rtl/forwarding.v rtl/hazard.v \
-rtl/imm_gen.v rtl/muldiv.v rtl/regfile.v rtl/atomic_unit.v"
-TOPS_LEAF="alu control csr forwarding hazard imm_gen muldiv regfile atomic_unit"
+rtl/imm_gen.v rtl/muldiv.v rtl/regfile.v rtl/atomic_unit.v rtl/clint.v"
+TOPS_LEAF="alu control csr forwarding hazard imm_gen muldiv regfile atomic_unit clint"
 
 fail=0
 check() {   # $1=top  $2=surse

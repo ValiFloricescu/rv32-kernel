@@ -180,6 +180,8 @@
 `define PRIV_S       2'b01
 `define PRIV_M       2'b11
 
+`define CLINT_HI     16'h0200
+
 //  misa pentru RV32IM: MXL=01 (32b) | I (bit8) | M (bit12)
 `define MISA_RV32IM  32'h40001100
 

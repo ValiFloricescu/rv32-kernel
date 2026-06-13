@@ -18,10 +18,13 @@ module csr (
     input  wire [31:0] trap_val,
     input  wire        mret_en,
     input  wire        sret_en,
+    input  wire        mtip_i,
 
     output wire [31:0] trap_vec_o,
     output wire [31:0] ret_pc_o,
-    output wire [1:0]  priv_o
+    output wire [1:0]  priv_o,
+    output wire        irq_pending,
+    output wire [31:0] irq_cause
 );
 
     reg [1:0]  priv;
@@ -37,9 +40,30 @@ module csr (
     wire [31:0] sie_v   = mie_r & mideleg;
     wire [31:0] sip_v   = mip_r & mideleg;
 
+    wire [31:0] mip_eff = (mip_r & ~(32'b1 << 7)) | ({31'b0, mtip_i} << 7);
+    wire [31:0] pend    = mip_eff & mie_r;
+    wire        m_en    = (priv != `PRIV_M) | mie;
+    wire        s_en    = (priv == `PRIV_U) | ((priv == `PRIV_S) & sie);
+    wire [31:0] take    = (pend & ~mideleg & {32{m_en}})
+                        | (pend &  mideleg & {32{s_en}});
+
+    reg [4:0] icode;
+    always @(*) begin
+        if      (take[11]) icode = 5'd11;
+        else if (take[3])  icode = 5'd3;
+        else if (take[7])  icode = 5'd7;
+        else if (take[9])  icode = 5'd9;
+        else if (take[1])  icode = 5'd1;
+        else if (take[5])  icode = 5'd5;
+        else               icode = 5'd0;
+    end
+    assign irq_pending = |take;
+    assign irq_cause   = {1'b1, 26'b0, icode};
+
     assign priv_o = priv;
 
-    wire deleg  = medeleg[trap_cause[4:0]];
+    wire is_int = trap_cause[31];
+    wire deleg  = is_int ? mideleg[trap_cause[4:0]] : medeleg[trap_cause[4:0]];
     wire to_s   = (priv != `PRIV_M) & deleg;
 
     assign trap_vec_o = to_s ? {stvec[31:2], 2'b00} : {mtvec[31:2], 2'b00};
@@ -56,7 +80,7 @@ module csr (
             `CSR_MEPC    : rdata = mepc;
             `CSR_MCAUSE  : rdata = mcause;
             `CSR_MTVAL   : rdata = mtval;
-            `CSR_MIP     : rdata = mip_r;
+            `CSR_MIP     : rdata = mip_eff;
             `CSR_MEDELEG : rdata = medeleg;
             `CSR_MIDELEG : rdata = mideleg;
             `CSR_MVENDORID,

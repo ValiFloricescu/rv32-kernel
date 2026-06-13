@@ -1,17 +1,6 @@
 `timescale 1ns / 1ps
 `include "riscv_defs.vh"
-// ============================================================
-//  riscv_core_pipe.v  -  Nucleu RV32IM PIPELINE pe 5 etaje
-//    forwarding + hazard load-use + flush branch + extensia M
-// ------------------------------------------------------------
-//  Doua tipuri de stall, ambele ingheata PC si IF/ID:
-//    - load-use : insereaza BULA in ID/EX (load-ul avanseaza)
-//    - muldiv   : TINE instructiunea M in EX (ID/EX hold) cat timp
-//                 unitatea muldiv lucreaza; EX/MEM primeste bula.
-//  Cele doua se exclud reciproc (in EX e o singura instructiune).
-//
-//  RESET ACTIV PE 0. Sintetizabil.
-// ============================================================
+
 module riscv_core_pipe #(
     parameter [31:0] RESET_PC = `RESET_PC   // vector de reset; implicit din riscv_defs.vh
 ) (
@@ -306,20 +295,27 @@ module riscv_core_pipe #(
     wire        load_misalign  = mem_access & sz_misalign & ~is_store_acc;
     wire        store_misalign = mem_access & sz_misalign &  is_store_acc;
 
-    wire        ex_trap = (instr_misalign | load_misalign | store_misalign |
-                           idex_sys_ecall | idex_sys_ebreak | csr_illegal | xret_illegal | idex_illegal) & ~mul_stall;
-    wire        ex_mret = mret_ok & ~mul_stall;
-    wire        ex_sret = sret_ok & ~mul_stall;
-    wire [31:0] ex_trap_cause = instr_misalign  ? `CAUSE_INSTR_MISALIGN
-                              : load_misalign    ? `CAUSE_LOAD_MISALIGN
-                              : store_misalign   ? `CAUSE_STORE_MISALIGN
-                              : idex_sys_ecall   ? (32'd8 + {30'b0, csr_priv})
-                              : idex_sys_ebreak  ? `CAUSE_BREAKPOINT
-                              :                    `CAUSE_ILLEGAL;
-    wire [31:0] ex_trap_val   = instr_misalign  ? ex_target
+    wire        ex_trap_sync = (instr_misalign | load_misalign | store_misalign |
+                                idex_sys_ecall | idex_sys_ebreak | csr_illegal | xret_illegal | idex_illegal) & ~mul_stall;
+    wire        take_int = irq_pending & idex_valid & ~mul_stall;
+    wire        ex_trap  = ex_trap_sync | take_int;
+    wire        ex_mret = mret_ok & ~mul_stall & ~take_int;
+    wire        ex_sret = sret_ok & ~mul_stall & ~take_int;
+    wire [31:0] sync_cause = instr_misalign  ? `CAUSE_INSTR_MISALIGN
+                           : load_misalign    ? `CAUSE_LOAD_MISALIGN
+                           : store_misalign   ? `CAUSE_STORE_MISALIGN
+                           : idex_sys_ecall   ? (32'd8 + {30'b0, csr_priv})
+                           : idex_sys_ebreak  ? `CAUSE_BREAKPOINT
+                           :                    `CAUSE_ILLEGAL;
+    wire [31:0] ex_trap_cause = take_int ? irq_cause : sync_cause;
+    wire [31:0] ex_trap_val   = take_int        ? 32'b0
+                              : instr_misalign  ? ex_target
                               : (load_misalign | store_misalign) ? mem_addr_ex
                               : idex_sys_ebreak  ? idex_pc
                               :                    32'b0;
+
+    wire        irq_pending;
+    wire [31:0] irq_cause;
 
     csr u_csr (
         .clk(clk), .rst_n(rst_n),
@@ -328,8 +324,9 @@ module riscv_core_pipe #(
         .rdata(csr_rdata), .addr_valid(csr_addr_valid),
         .trap_en(ex_trap), .trap_cause(ex_trap_cause),
         .trap_epc(idex_pc), .trap_val(ex_trap_val),
-        .mret_en(ex_mret), .sret_en(ex_sret),
-        .trap_vec_o(csr_trap_vec), .ret_pc_o(csr_ret_pc), .priv_o(csr_priv)
+        .mret_en(ex_mret), .sret_en(ex_sret), .mtip_i(clint_mtip),
+        .trap_vec_o(csr_trap_vec), .ret_pc_o(csr_ret_pc), .priv_o(csr_priv),
+        .irq_pending(irq_pending), .irq_cause(irq_cause)
     );
 
     // rezultatul scris mai departe: CSR, muldiv (op M) sau ALU
@@ -417,10 +414,21 @@ module riscv_core_pipe #(
             resv_valid <= 1'b0;
     end
 
+    wire        clint_sel  = exmem_valid & (exmem_mem_read | exmem_mem_write)
+                           & (exmem_alu_result[31:16] == `CLINT_HI);
+    wire [31:0] clint_rdata;
+    wire        clint_mtip;
+    clint u_clint (
+        .clk(clk), .rst_n(rst_n),
+        .sel(clint_sel), .we(clint_sel & exmem_mem_write),
+        .off(exmem_alu_result[15:0]), .wdata(exmem_rs2_data),
+        .rdata(clint_rdata), .mtip(clint_mtip)
+    );
+
     assign dmem_addr  = exmem_alu_result;
     assign dmem_wdata = exmem_is_amo ? amo_wval :
                         exmem_is_sc  ? exmem_rs2_data : mem_store_data;
-    assign dmem_we    = exmem_mem_write | exmem_is_amo | sc_ok;
+    assign dmem_we    = (exmem_mem_write | exmem_is_amo | sc_ok) & ~clint_sel;
     assign dmem_wstrb = (exmem_is_amo | sc_ok) ? 4'b1111 :
                         exmem_mem_write       ? mem_store_strb : 4'b0000;
 
@@ -436,7 +444,7 @@ module riscv_core_pipe #(
             `F3_LHU: mem_load_data = {16'b0, mem_ld_half};
             default: mem_load_data = dmem_rdata;
         endcase
-        // SC: rd primeste statusul (0 = succes, 1 = esec), nu data din memorie
+        if (clint_sel)   mem_load_data = clint_rdata;
         if (exmem_is_sc) mem_load_data = {31'b0, ~sc_ok};
     end
 

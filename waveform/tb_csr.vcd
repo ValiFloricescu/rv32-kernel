@@ -1,5 +1,5 @@
 $date
-	Sat Jun 13 20:34:27 2026
+	Sun Jun 14 01:49:51 2026
 $end
 $version
 	Icarus Verilog
@@ -29,58 +29,68 @@ $var integer 32 2 errors [31:0] $end
 $scope module dut $end
 $var wire 12 3 addr [11:0] $end
 $var wire 1 ' clk $end
+$var wire 1 4 m_en $end
+$var wire 32 5 mip_eff [31:0] $end
 $var wire 1 ( mret_en $end
-$var wire 2 4 priv_o [1:0] $end
+$var wire 1 6 mtip_i $end
+$var wire 32 7 pend [31:0] $end
+$var wire 2 8 priv_o [1:0] $end
 $var wire 1 ) rd_en $end
 $var wire 1 * rst_n $end
-$var wire 32 5 sie_v [31:0] $end
-$var wire 32 6 sip_v [31:0] $end
+$var wire 1 9 s_en $end
+$var wire 32 : sie_v [31:0] $end
+$var wire 32 ; sip_v [31:0] $end
 $var wire 1 + sret_en $end
-$var wire 1 7 to_s $end
-$var wire 32 8 trap_cause [31:0] $end
+$var wire 32 < take [31:0] $end
+$var wire 1 = to_s $end
+$var wire 32 > trap_cause [31:0] $end
 $var wire 1 - trap_en $end
-$var wire 32 9 trap_epc [31:0] $end
-$var wire 32 : trap_val [31:0] $end
-$var wire 32 ; wdata [31:0] $end
+$var wire 32 ? trap_epc [31:0] $end
+$var wire 32 @ trap_val [31:0] $end
+$var wire 32 A wdata [31:0] $end
 $var wire 1 1 wr_en $end
-$var wire 32 < trap_vec_o [31:0] $end
-$var wire 32 = sstatus [31:0] $end
-$var wire 32 > ret_pc_o [31:0] $end
-$var wire 32 ? mstatus [31:0] $end
-$var wire 1 @ deleg $end
+$var wire 32 B trap_vec_o [31:0] $end
+$var wire 32 C sstatus [31:0] $end
+$var wire 32 D ret_pc_o [31:0] $end
+$var wire 32 E mstatus [31:0] $end
+$var wire 1 F is_int $end
+$var wire 1 G irq_pending $end
+$var wire 32 H irq_cause [31:0] $end
+$var wire 1 I deleg $end
 $var reg 1 % addr_valid $end
-$var reg 32 A mcause [31:0] $end
-$var reg 32 B medeleg [31:0] $end
-$var reg 32 C mepc [31:0] $end
-$var reg 32 D mideleg [31:0] $end
-$var reg 1 E mie $end
-$var reg 32 F mie_r [31:0] $end
-$var reg 32 G mip_r [31:0] $end
-$var reg 1 H mpie $end
-$var reg 2 I mpp [1:0] $end
-$var reg 32 J mscratch [31:0] $end
-$var reg 32 K mtval [31:0] $end
-$var reg 32 L mtvec [31:0] $end
-$var reg 2 M priv [1:0] $end
-$var reg 32 N rdata [31:0] $end
-$var reg 32 O satp [31:0] $end
-$var reg 32 P scause [31:0] $end
-$var reg 32 Q sepc [31:0] $end
-$var reg 1 R sie $end
-$var reg 1 S spie $end
-$var reg 1 T spp $end
-$var reg 32 U sscratch [31:0] $end
-$var reg 32 V stval [31:0] $end
-$var reg 32 W stvec [31:0] $end
+$var reg 5 J icode [4:0] $end
+$var reg 32 K mcause [31:0] $end
+$var reg 32 L medeleg [31:0] $end
+$var reg 32 M mepc [31:0] $end
+$var reg 32 N mideleg [31:0] $end
+$var reg 1 O mie $end
+$var reg 32 P mie_r [31:0] $end
+$var reg 32 Q mip_r [31:0] $end
+$var reg 1 R mpie $end
+$var reg 2 S mpp [1:0] $end
+$var reg 32 T mscratch [31:0] $end
+$var reg 32 U mtval [31:0] $end
+$var reg 32 V mtvec [31:0] $end
+$var reg 2 W priv [1:0] $end
+$var reg 32 X rdata [31:0] $end
+$var reg 32 Y satp [31:0] $end
+$var reg 32 Z scause [31:0] $end
+$var reg 32 [ sepc [31:0] $end
+$var reg 1 \ sie $end
+$var reg 1 ] spie $end
+$var reg 1 ^ spp $end
+$var reg 32 _ sscratch [31:0] $end
+$var reg 32 ` stval [31:0] $end
+$var reg 32 a stvec [31:0] $end
 $upscope $end
 $scope task rd_chk $end
-$var reg 12 X a [11:0] $end
-$var reg 32 Y exp [31:0] $end
-$var integer 32 Z id [31:0] $end
+$var reg 12 b a [11:0] $end
+$var reg 32 c exp [31:0] $end
+$var integer 32 d id [31:0] $end
 $upscope $end
 $scope task wr $end
-$var reg 12 [ a [11:0] $end
-$var reg 32 \ d [31:0] $end
+$var reg 12 e a [11:0] $end
+$var reg 32 f d [31:0] $end
 $upscope $end
 $upscope $end
 $enddefinitions $end
@@ -89,47 +99,57 @@ $dumpall
 $end
 #0
 $dumpvars
-bx \
-bx [
-bx Z
-bx Y
-bx X
-b0 W
+bx f
+bx e
+bx d
+bx c
+bx b
+b0 a
+b0 `
+b0 _
+0^
+0]
+0\
+b0 [
+b0 Z
+b0 Y
+b0 X
+b11 W
 b0 V
 b0 U
-0T
-0S
+b0 T
+b0 S
 0R
 b0 Q
 b0 P
-b0 O
+0O
 b0 N
-b11 M
+b0 M
 b0 L
 b0 K
 b0 J
-b0 I
-0H
-b0 G
-b0 F
-0E
+0I
+b10000000000000000000000000000000 H
+0G
+0F
+b0 E
 b0 D
 b0 C
 b0 B
 b0 A
-0@
+b0 @
 b0 ?
 b0 >
-b0 =
+0=
 b0 <
 b0 ;
 b0 :
-b0 9
-b0 8
-07
-b0 6
-b0 5
-b11 4
+09
+b11 8
+b0 7
+z6
+b0x0000000 5
+04
 b0 3
 b0 2
 01
@@ -157,59 +177,59 @@ $end
 #15000
 1'
 #20000
-b1000000000101000001000100000001 Y
-b1100000001 X
-b1 Z
+b1000000000101000001000100000001 c
+b1100000001 b
+b1 d
 1*
 0'
 #25000
 1'
 #30000
 b1000000000101000001000100000001 #
-b1000000000101000001000100000001 N
+b1000000000101000001000100000001 X
 1%
 1)
 b1100000001 &
 b1100000001 3
 0'
 #31000
-b0 Y
-b111100010100 X
-b10 Z
+b0 c
+b111100010100 b
+b10 d
 0)
 #35000
 1'
 #40000
 b0 #
-b0 N
+b0 X
 1)
 b111100010100 &
 b111100010100 3
 0'
 #41000
-b1001001000000 \
-b1100000101 [
+b1001001000000 f
+b1100000101 e
 0)
 #45000
 1'
 #50000
 11
 b1001001000000 0
-b1001001000000 ;
+b1001001000000 A
 b1100000101 &
 b1100000101 3
 0'
 #55000
 b1001001000000 !
-b1001001000000 <
+b1001001000000 B
 b1001001000000 #
-b1001001000000 N
-b1001001000000 L
+b1001001000000 X
+b1001001000000 V
 1'
 #60000
-b1001001000000 Y
-b1100000101 X
-b11 Z
+b1001001000000 c
+b1100000101 b
+b11 d
 01
 0'
 #65000
@@ -218,29 +238,29 @@ b11 Z
 1)
 0'
 #71000
-b11011110101011011011111011101111 \
-b1101000000 [
+b11011110101011011011111011101111 f
+b1101000000 e
 0)
 #75000
 1'
 #80000
 b0 #
-b0 N
+b0 X
 11
 b11011110101011011011111011101111 0
-b11011110101011011011111011101111 ;
+b11011110101011011011111011101111 A
 b1101000000 &
 b1101000000 3
 0'
 #85000
 b11011110101011011011111011101111 #
-b11011110101011011011111011101111 N
-b11011110101011011011111011101111 J
+b11011110101011011011111011101111 X
+b11011110101011011011111011101111 T
 1'
 #90000
-b11011110101011011011111011101111 Y
-b1101000000 X
-b100 Z
+b11011110101011011011111011101111 c
+b1101000000 b
+b100 d
 01
 0'
 #95000
@@ -255,15 +275,15 @@ b100 Z
 #110000
 0%
 b0 #
-b0 N
+b0 X
 1)
 b11111000000 &
 b11111000000 3
 0'
 #111000
 0%
-b1000 \
-b1100000000 [
+b1000 f
+b1100000000 e
 0)
 #115000
 1'
@@ -271,15 +291,16 @@ b1100000000 [
 1%
 11
 b1000 0
-b1000 ;
+b1000 A
 b1100000000 &
 b1100000000 3
 0'
 #125000
 b1000 #
-b1000 N
-b1000 ?
-1E
+b1000 X
+14
+b1000 E
+1O
 1'
 #130000
 01
@@ -288,48 +309,49 @@ b1000 ?
 1'
 #140000
 b10000000 .
-b10000000 9
+b10000000 ?
 b1011 ,
-b1011 8
+b1011 >
 1-
 0'
 #145000
+04
 b1100010000000 #
-b1100010000000 N
+b1100010000000 X
 b10000000 "
-b10000000 >
-b11 I
-0E
-b1100010000000 ?
-1H
-b1011 A
-b10000000 C
+b10000000 D
+b11 S
+0O
+b1100010000000 E
+1R
+b1011 K
+b10000000 M
 1'
 #150000
-b10000000 Y
-b1101000001 X
-b101 Z
+b10000000 c
+b1101000001 b
+b101 d
 0-
 0'
 #155000
 1'
 #160000
 b10000000 #
-b10000000 N
+b10000000 X
 1)
 b1101000001 &
 b1101000001 3
 0'
 #161000
-b1011 Y
-b1101000010 X
-b110 Z
+b1011 c
+b1101000010 b
+b110 d
 0)
 #165000
 1'
 #170000
 b1011 #
-b1011 N
+b1011 X
 1)
 b1101000010 &
 b1101000010 3
@@ -340,7 +362,7 @@ b1101000010 3
 1'
 #180000
 b1100010000000 #
-b1100010000000 N
+b1100010000000 X
 1)
 b1100000000 &
 b1100000000 3
@@ -354,10 +376,11 @@ b1100000000 3
 0'
 #195000
 b10001000 #
-b10001000 N
-b0 I
-b10001000 ?
-1E
+b10001000 X
+14
+b0 S
+b10001000 E
+1O
 1'
 #200000
 0(
