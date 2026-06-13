@@ -1,0 +1,420 @@
+$date
+	Sun Jun 14 02:12:45 2026
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1ps
+$end
+$scope module tb_mmu $end
+$var wire 1 ! mem_ack $end
+$var wire 32 " mem_rdata [31:0] $end
+$var wire 32 # paddr [31:0] $end
+$var wire 1 $ mem_req $end
+$var wire 32 % mem_addr [31:0] $end
+$var wire 4 & fault_cause [3:0] $end
+$var wire 1 ' fault $end
+$var wire 1 ( done $end
+$var reg 2 ) access [1:0] $end
+$var reg 1 * clk $end
+$var reg 1 + mxr $end
+$var reg 2 , priv [1:0] $end
+$var reg 1 - req $end
+$var reg 1 . rst_n $end
+$var reg 32 / satp [31:0] $end
+$var reg 1 0 sum $end
+$var reg 32 1 vaddr [31:0] $end
+$var integer 32 2 errors [31:0] $end
+$var integer 32 3 i [31:0] $end
+$scope module dut $end
+$var wire 2 4 access [1:0] $end
+$var wire 1 * clk $end
+$var wire 1 5 l1_invalid $end
+$var wire 1 6 l1_leaf $end
+$var wire 1 ! mem_ack $end
+$var wire 32 7 mem_rdata [31:0] $end
+$var wire 1 + mxr $end
+$var wire 2 8 priv [1:0] $end
+$var wire 1 - req $end
+$var wire 1 . rst_n $end
+$var wire 32 9 satp [31:0] $end
+$var wire 1 0 sum $end
+$var wire 32 : vaddr [31:0] $end
+$var parameter 2 ; S_DONE $end
+$var parameter 2 < S_IDLE $end
+$var parameter 2 = S_L0 $end
+$var parameter 2 > S_L1 $end
+$var reg 2 ? access_q [1:0] $end
+$var reg 1 ( done $end
+$var reg 1 ' fault $end
+$var reg 4 @ fault_cause [3:0] $end
+$var reg 32 A mem_addr [31:0] $end
+$var reg 1 $ mem_req $end
+$var reg 32 B paddr [31:0] $end
+$var reg 2 C state [1:0] $end
+$var reg 32 D vaddr_q [31:0] $end
+$scope function bad_leaf $end
+$var reg 1 E a $end
+$var reg 2 F acc [1:0] $end
+$var reg 1 G d $end
+$var reg 1 H ok $end
+$var reg 32 I p [31:0] $end
+$var reg 1 J r $end
+$var reg 1 K u $end
+$var reg 1 L w $end
+$var reg 1 M x $end
+$upscope $end
+$scope function pf_cause $end
+$var reg 2 N acc [1:0] $end
+$upscope $end
+$upscope $end
+$scope task chk $end
+$var reg 32 O exp [31:0] $end
+$var reg 32 P got [31:0] $end
+$var integer 32 Q id [31:0] $end
+$upscope $end
+$scope task xlate $end
+$var reg 2 R acc [1:0] $end
+$var reg 32 S va [31:0] $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+$comment Show the parameter values. $end
+$dumpall
+b1 >
+b10 =
+b0 <
+b11 ;
+$end
+#0
+$dumpvars
+bx S
+bx R
+bx Q
+bx P
+bx O
+bx N
+xM
+xL
+xK
+xJ
+bx I
+xH
+xG
+bx F
+xE
+bx D
+b0 C
+b0 B
+bx A
+b0 @
+bx ?
+b0 :
+b10000000000000000000000000000001 9
+b0 8
+bx 7
+x6
+x5
+b0 4
+b100000000000000 3
+b0 2
+b0 1
+00
+b10000000000000000000000000000001 /
+0.
+0-
+b0 ,
+0+
+0*
+b0 )
+0(
+0'
+b0 &
+bx %
+0$
+b0 #
+bx "
+0!
+$end
+#5000
+1*
+#10000
+0*
+#15000
+1*
+#20000
+b1 R
+b10000000000101010111100 S
+1.
+0*
+#25000
+1*
+#30000
+b1 )
+b1 4
+b10000000000101010111100 1
+b10000000000101010111100 :
+1-
+0*
+#35000
+05
+06
+b100000000001 "
+b100000000001 7
+b1 C
+1!
+1$
+b1000000000100 %
+b1000000000100 A
+b1 ?
+b10000000000101010111100 D
+1*
+#40000
+0-
+0*
+#45000
+16
+b1010011011111 "
+b1010011011111 7
+b10 C
+b10000000000000 %
+b10000000000000 A
+1!
+1$
+1*
+#50000
+0*
+#55000
+b101101010111100 #
+b101101010111100 B
+b1101 &
+b1101 @
+b11 C
+1(
+0!
+0$
+b1 N
+1H
+1G
+1E
+1K
+1M
+1L
+1J
+b1010011011111 I
+b1 F
+1*
+#60000
+b10 R
+b10000000001000000000000 S
+b101101010111100 O
+b101101010111100 P
+b10 Q
+0*
+#65000
+b0 C
+0(
+1*
+#70000
+b10 )
+b10 4
+b10000000001000000000000 1
+b10000000001000000000000 :
+1-
+0*
+#75000
+06
+b100000000001 "
+b100000000001 7
+b1 C
+1!
+1$
+b1000000000100 %
+b1000000000100 A
+b10 ?
+b10000000001000000000000 D
+1*
+#80000
+0-
+0*
+#85000
+16
+b1100001011011 "
+b1100001011011 7
+b10 C
+b10000000000100 %
+b10000000000100 A
+1!
+1$
+1*
+#90000
+0*
+#95000
+b110000000000000 #
+b110000000000000 B
+b1111 &
+b1111 @
+1'
+b11 C
+1(
+0!
+0$
+b10 N
+0H
+0G
+0L
+b1100001011011 I
+b10 F
+1*
+#100000
+b1 R
+b1111 O
+b1111 P
+b100 Q
+0*
+#105000
+b0 C
+0'
+0(
+1*
+#110000
+b1 )
+b1 4
+1-
+0*
+#115000
+06
+b100000000001 "
+b100000000001 7
+b1 C
+1!
+1$
+b1000000000100 %
+b1000000000100 A
+b1 ?
+1*
+#120000
+0-
+0*
+#125000
+16
+b1100001011011 "
+b1100001011011 7
+b10 C
+b10000000000100 %
+b10000000000100 A
+1!
+1$
+1*
+#130000
+0*
+#135000
+b1101 &
+b1101 @
+b11 C
+1(
+0!
+0$
+b1 N
+1H
+b1 F
+1*
+#140000
+b100000000000000000000000 S
+b110000000000000 O
+b110000000000000 P
+b110 Q
+0*
+#145000
+b0 C
+0(
+1*
+#150000
+b100000000000000000000000 1
+b100000000000000000000000 :
+1-
+0*
+#155000
+15
+06
+b0 "
+b0 7
+b1 C
+1!
+1$
+b1000000001000 %
+b1000000001000 A
+b100000000000000000000000 D
+1*
+#160000
+0-
+0*
+#165000
+b11 C
+1(
+1'
+0!
+0$
+1*
+#170000
+b0 R
+b10000000001000000000000 S
+b1101 O
+b1101 P
+b1000 Q
+0*
+#175000
+b0 C
+0'
+0(
+1*
+#180000
+b0 )
+b0 4
+b10000000001000000000000 1
+b10000000001000000000000 :
+1-
+0*
+#185000
+05
+b100000000001 "
+b100000000001 7
+b1 C
+1!
+1$
+b1000000000100 %
+b1000000000100 A
+b0 ?
+b10000000001000000000000 D
+1*
+#190000
+0-
+0*
+#195000
+16
+b1100001011011 "
+b1100001011011 7
+b10 C
+b10000000000100 %
+b10000000000100 A
+1!
+1$
+1*
+#200000
+0*
+#205000
+b1100 &
+b1100 @
+b11 C
+1(
+0!
+0$
+b0 N
+b0 F
+1*
+#210000
+b110000000000000 O
+b110000000000000 P
+b1010 Q
+0*
