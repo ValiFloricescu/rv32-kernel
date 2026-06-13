@@ -81,20 +81,24 @@ compliance:                ## ruleaza conformitatea RISCOF (in container: I/M/A)
 	echo ">>> CONFORMITATE $(COMPLIANCE_SUITES) OK <<<"
 
 synth-check:               ## verifica sintetizabilitatea (yosys: fara latch-uri)
-	@./scripts/check_synth.sh
+	@bash scripts/check_synth.sh
 
 PIPE5_ROOT := $(CURDIR)
 
 cosim-all:                 ## lockstep pe toate testele RISCOF (in container)
-	@PIPE5_ROOT=$(CURDIR) SPIKE_ISA=rv32ima_zicsr ./verif/cosim/run_cosim_all.sh
+	@PIPE5_ROOT=$(CURDIR) SPIKE_ISA=rv32ima_zicsr bash verif/cosim/run_cosim_all.sh
 
 random:                    ## testare aleatoare lockstep vs Spike (in container)
-	@PIPE5_ROOT=$(CURDIR) SPIKE_ISA=rv32ima_zicsr GROUPS=$${GROUPS:-base,m,a} K=$${K:-50} ./verif/random/run_random.sh
+	@PIPE5_ROOT=$(CURDIR) SPIKE_ISA=rv32ima_zicsr GROUPS=$${GROUPS:-base,m,a} K=$${K:-50} bash verif/random/run_random.sh
 
-verify: regress synth-check compliance cosim-all random  ## validare COMPLETA (in container)
+verify: regress synth-check          ## validare COMPLETA (in container)
+	@$(MAKE) compliance COMPLIANCE_SUITES="I M A"
+	@$(MAKE) cosim-all
+	@$(MAKE) random
+	@$(MAKE) compliance COMPLIANCE_SUITES="privilege"
 	@echo "============================================"
 	@echo "  >>> VALIDARE COMPLETA TRECUTA <<<"
-	@echo "  regresie + sinteza + RISCOF + lockstep + aleator"
+	@echo "  regresie + sinteza + RISCOF(I/M/A/priv) + lockstep + aleator"
 	@echo "============================================"
 
 build:                     ## compileaza un singur test: $(TB)

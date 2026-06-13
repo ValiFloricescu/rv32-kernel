@@ -26,6 +26,10 @@ echo "  Lockstep pe suita RISCOF: ${#ELFS[@]} teste"
 echo "============================================"
 for elf in "${ELFS[@]}"; do
     name=$(echo "$elf" | sed -E 's#.*/src/([^/]+)\.S/.*#\1#')
+    # testele de privilegiu (trap-uri/handlere) se valideaza prin semnatura, nu lockstep
+    case "$name" in
+        misalign*|ebreak|ecall) printf "  [skip] %s\n" "$name"; continue ;;
+    esac
     out=$(bash "$ROOT/verif/cosim/run_cosim.sh" "$elf" "$WORK/$name" 2>&1)
     if echo "$out" | grep -q "LOCKSTEP OK"; then
         printf "  [ok]   %s\n" "$name"; pass=$((pass+1))
