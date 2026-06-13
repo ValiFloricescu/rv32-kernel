@@ -24,7 +24,8 @@ module csr (
     output wire [31:0] ret_pc_o,
     output wire [1:0]  priv_o,
     output wire        irq_pending,
-    output wire [31:0] irq_cause
+    output wire [31:0] irq_cause,
+    output wire [31:0] satp_o
 );
 
     reg [1:0]  priv;
@@ -61,6 +62,7 @@ module csr (
     assign irq_cause   = {1'b1, 26'b0, icode};
 
     assign priv_o = priv;
+    assign satp_o = satp;
 
     wire is_int = trap_cause[31];
     wire deleg  = is_int ? mideleg[trap_cause[4:0]] : medeleg[trap_cause[4:0]];

@@ -198,6 +198,9 @@
 `define CAUSE_ECALL_U    32'd8
 `define CAUSE_ECALL_S    32'd9
 `define CAUSE_ECALL_M    32'd11
+`define CAUSE_INSTR_PAGE 32'd12
+`define CAUSE_LOAD_PAGE  32'd13
+`define CAUSE_STORE_PAGE 32'd15
 
 // ------------------------------------------------------------
 //  Encodarea interna a operatiei ALU (semnal de control, 4 biti)

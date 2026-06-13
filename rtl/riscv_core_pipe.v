@@ -52,6 +52,7 @@ module riscv_core_pipe #(
     // instr = cuvantul instructiunii retrase. Nu influenteaza logica functionala.
     reg                  ifid_valid;
     reg                  idex_valid;
+    reg                  ifid_fault, idex_fault;
     reg [31:0]           idex_instr;
     reg                  exmem_valid;
     reg [31:0]           exmem_instr;
@@ -71,7 +72,8 @@ module riscv_core_pipe #(
     // stall de muldiv: tine instructiunea M in EX pana cand unitatea termina
     wire mul_stall   = idex_is_muldiv & ~mul_done;
     // orice stall ingheata PC + IF/ID
-    wire stall_front = load_use_stall | mul_stall;
+    wire if_xlate_pending = mmu_active & (fstate != F_RDY);
+    wire stall_front = load_use_stall | mul_stall | mmu_stall | if_xlate_pending;
 
     // ============================================================
     //  ETAPA IF
@@ -81,24 +83,30 @@ module riscv_core_pipe #(
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n)            pc <= RESET_PC;
+        else if (ex_redirect)  pc <= ex_redirect_pc;
         else if (!stall_front) pc <= next_pc;
     end
 
-    assign imem_addr = pc;
+    assign imem_addr = (mmu_active & fstate == F_RDY) ? fpaddr : pc;
     wire [31:0] if_instr = imem_rdata;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             ifid_pc <= 32'b0; ifid_pc4 <= 32'b0; ifid_instr <= `RV_NOP;
-            ifid_valid <= 1'b0;
-        end else if (stall_front) begin
-            // hold (load-use sau muldiv)
+            ifid_valid <= 1'b0; ifid_fault <= 1'b0;
+        end else if (back_pressure) begin
+            // stall din spate (load-use / muldiv / walk de date): ingheata IF/ID
         end else if (ex_redirect) begin
             ifid_pc <= 32'b0; ifid_pc4 <= 32'b0; ifid_instr <= `RV_NOP;  // squash
-            ifid_valid <= 1'b0;
+            ifid_valid <= 1'b0; ifid_fault <= 1'b0;
+        end else if (if_xlate_pending) begin
+            // traducere fetch in curs: bula (instructiunea precedenta a fost deja consumata)
+            ifid_pc <= 32'b0; ifid_pc4 <= 32'b0; ifid_instr <= `RV_NOP;
+            ifid_valid <= 1'b0; ifid_fault <= 1'b0;
         end else begin
-            ifid_pc <= pc; ifid_pc4 <= pc_plus4; ifid_instr <= if_instr;
-            ifid_valid <= 1'b1;
+            ifid_pc <= pc; ifid_pc4 <= pc_plus4;
+            ifid_instr <= (mmu_active & ffault) ? `RV_NOP : if_instr;
+            ifid_valid <= 1'b1; ifid_fault <= mmu_active & ffault;
         end
     end
 
@@ -172,8 +180,8 @@ module riscv_core_pipe #(
             idex_is_csr <= 1'b0; idex_sys_ecall <= 1'b0; idex_sys_ebreak <= 1'b0; idex_sys_mret <= 1'b0; idex_sys_sret <= 1'b0; idex_illegal <= 1'b0; idex_csr_addr <= 12'b0;
             idex_is_amo <= 1'b0; idex_is_lr <= 1'b0; idex_is_sc <= 1'b0; idex_amo_op <= 5'b0;
             idex_valid <= 1'b0; idex_instr <= `RV_NOP;
-        end else if (mul_stall) begin
-            // TINE instructiunea M in EX (nu schimba nimic)
+        end else if (mul_stall || mmu_stall) begin
+            // TINE instructiunea in EX (muldiv sau walk MMU in curs)
         end else if (load_use_stall || ex_redirect) begin
             // bula: dezactiveaza efectele
             idex_reg_write <= 1'b0; idex_mem_read <= 1'b0; idex_mem_write <= 1'b0;
@@ -185,7 +193,7 @@ module riscv_core_pipe #(
             idex_rd <= 5'b0; idex_rs1 <= 5'b0; idex_rs2 <= 5'b0; idex_funct3 <= 3'b0;
             idex_is_csr <= 1'b0; idex_sys_ecall <= 1'b0; idex_sys_ebreak <= 1'b0; idex_sys_mret <= 1'b0; idex_sys_sret <= 1'b0; idex_illegal <= 1'b0; idex_csr_addr <= 12'b0;
             idex_is_amo <= 1'b0; idex_is_lr <= 1'b0; idex_is_sc <= 1'b0; idex_amo_op <= 5'b0;
-            idex_valid <= 1'b0; idex_instr <= `RV_NOP;
+            idex_valid <= 1'b0; idex_instr <= `RV_NOP; idex_fault <= 1'b0;
         end else begin
             idex_reg_write <= id_reg_write; idex_mem_read <= id_mem_read;
             idex_mem_write <= id_mem_write; idex_branch <= id_branch;
@@ -198,7 +206,7 @@ module riscv_core_pipe #(
             idex_funct3 <= id_funct3;
             idex_is_csr <= id_is_csr; idex_sys_ecall <= id_sys_ecall; idex_sys_ebreak <= id_sys_ebreak; idex_sys_mret <= id_sys_mret; idex_sys_sret <= id_sys_sret; idex_illegal <= id_illegal; idex_csr_addr <= ifid_instr[31:20];
             idex_is_amo <= id_is_amo; idex_is_lr <= id_is_lr; idex_is_sc <= id_is_sc; idex_amo_op <= id_amo_op;
-            idex_valid <= ifid_valid; idex_instr <= ifid_instr;
+            idex_valid <= ifid_valid; idex_instr <= ifid_instr; idex_fault <= ifid_fault;
         end
     end
 
@@ -295,27 +303,107 @@ module riscv_core_pipe #(
     wire        load_misalign  = mem_access & sz_misalign & ~is_store_acc;
     wire        store_misalign = mem_access & sz_misalign &  is_store_acc;
 
+    wire        irq_pending;
+    wire [31:0] irq_cause, csr_satp;
+
+    wire        mmu_active = csr_satp[31] & (csr_priv != `PRIV_M);
+    wire        ex_mem_op  = idex_mem_read | idex_mem_write | idex_is_amo | idex_is_lr | idex_is_sc;
+    wire [1:0]  mmu_acc    = is_store_acc ? 2'd2 : 2'd1;
+    wire        need_xlate = mmu_active & ex_mem_op & idex_valid & ~(load_misalign | store_misalign);
+
+    localparam X_IDLE = 2'd0, X_WALK = 2'd1, X_RDY = 2'd2;
+    localparam F_IDLE = 2'd0, F_WALK = 2'd1, F_RDY = 2'd2;
+    reg  [1:0]  xstate, fstate;
+    reg  [31:0] xpaddr, fpaddr;
+    reg         xfault, ffault;
+    reg  [3:0]  xcause;
+    wire        mmu_done, mmu_fault, mmu_mem_req;
+    wire [31:0] mmu_paddr, mmu_mem_addr;
+    wire [3:0]  mmu_fault_cause;
+
+    // arbitraj non-preemptiv: un walk pornit se termina; la egalitate EX are prioritate
+    wire        if_need_xlate = mmu_active;
+    wire        w_busy   = (xstate == X_WALK) | (fstate == F_WALK);
+    wire        ex_wants = need_xlate    & (xstate == X_IDLE);
+    wire        if_wants = if_need_xlate & (fstate == F_IDLE);
+    wire        ex_start = ex_wants & ~w_busy;
+    wire        if_start = if_wants & ~w_busy & ~ex_wants;
+    wire        serving_ex = (xstate == X_WALK) | ex_start;
+
+    wire        mem_data_acc = (exmem_mem_read | exmem_mem_write | exmem_is_amo
+                                | exmem_is_lr | exmem_is_sc) & exmem_valid;
+    wire        walker_bus = mmu_walking & ~mem_data_acc;
+
+    mmu u_mmu (
+        .clk(clk), .rst_n(rst_n),
+        .req(ex_start | if_start),
+        .vaddr(serving_ex ? ex_alu_result : pc),
+        .access(serving_ex ? mmu_acc : 2'd0),
+        .satp(csr_satp), .priv(csr_priv), .sum(1'b0), .mxr(1'b0),
+        .done(mmu_done), .paddr(mmu_paddr), .fault(mmu_fault), .fault_cause(mmu_fault_cause),
+        .mem_req(mmu_mem_req), .mem_addr(mmu_mem_addr),
+        .mem_rdata(dmem_rdata), .mem_ack(mmu_mem_req & walker_bus)
+    );
+
+    wire        back_pressure = load_use_stall | mul_stall | mmu_stall;
+    wire        fetch_consumed = mmu_active ? ((fstate == F_RDY) & ~back_pressure) : ~back_pressure;
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) xstate <= X_IDLE;
+        else case (xstate)
+            X_IDLE: if (ex_start) xstate <= X_WALK;
+            X_WALK: if (mmu_done) begin
+                xpaddr <= mmu_paddr; xfault <= mmu_fault; xcause <= mmu_fault_cause;
+                xstate <= X_RDY;
+            end
+            X_RDY:  xstate <= X_IDLE;
+            default: xstate <= X_IDLE;
+        endcase
+    end
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin fstate <= F_IDLE; ffault <= 1'b0; fpaddr <= 32'b0; end
+        else case (fstate)
+            F_IDLE: if (if_start) fstate <= F_WALK;
+            F_WALK: if (mmu_done & ~serving_ex) begin
+                fpaddr <= mmu_paddr; ffault <= mmu_fault;
+                fstate <= F_RDY;
+            end
+            F_RDY:  if (ex_redirect | fetch_consumed) fstate <= F_IDLE;
+            default: fstate <= F_IDLE;
+        endcase
+    end
+
+    wire        mmu_stall    = need_xlate & (xstate != X_RDY);
+    wire        mmu_walking  = w_busy;
+    wire        ex_dfault    = need_xlate & (xstate == X_RDY) & xfault;
+    wire        ex_ifault    = idex_fault & idex_valid & ~mul_stall & ~mmu_stall;
+    wire        ex_pagefault = ex_dfault | ex_ifault;
+
     wire        ex_trap_sync = (instr_misalign | load_misalign | store_misalign |
-                                idex_sys_ecall | idex_sys_ebreak | csr_illegal | xret_illegal | idex_illegal) & ~mul_stall;
-    wire        take_int = irq_pending & idex_valid & ~mul_stall;
-    wire        ex_trap  = ex_trap_sync | take_int;
-    wire        ex_mret = mret_ok & ~mul_stall & ~take_int;
-    wire        ex_sret = sret_ok & ~mul_stall & ~take_int;
+                                idex_sys_ecall | idex_sys_ebreak | csr_illegal | xret_illegal | idex_illegal)
+                               & ~mul_stall & ~mmu_stall;
+    wire        take_int = irq_pending & idex_valid & ~mul_stall & ~mmu_stall;
+    wire        ex_trap  = ex_trap_sync | take_int | ex_pagefault;
+    wire        ex_mret = mret_ok & ~mul_stall & ~mmu_stall & ~take_int;
+    wire        ex_sret = sret_ok & ~mul_stall & ~mmu_stall & ~take_int;
     wire [31:0] sync_cause = instr_misalign  ? `CAUSE_INSTR_MISALIGN
                            : load_misalign    ? `CAUSE_LOAD_MISALIGN
                            : store_misalign   ? `CAUSE_STORE_MISALIGN
                            : idex_sys_ecall   ? (32'd8 + {30'b0, csr_priv})
                            : idex_sys_ebreak  ? `CAUSE_BREAKPOINT
                            :                    `CAUSE_ILLEGAL;
-    wire [31:0] ex_trap_cause = take_int ? irq_cause : sync_cause;
-    wire [31:0] ex_trap_val   = take_int        ? 32'b0
+    wire [31:0] ex_trap_cause = take_int     ? irq_cause
+                              : ex_ifault    ? `CAUSE_INSTR_PAGE
+                              : ex_dfault    ? {28'b0, xcause}
+                              :                sync_cause;
+    wire [31:0] ex_trap_val   = ex_ifault       ? idex_pc
+                              : ex_dfault       ? ex_alu_result
+                              : take_int        ? 32'b0
                               : instr_misalign  ? ex_target
                               : (load_misalign | store_misalign) ? mem_addr_ex
                               : idex_sys_ebreak  ? idex_pc
                               :                    32'b0;
-
-    wire        irq_pending;
-    wire [31:0] irq_cause;
 
     csr u_csr (
         .clk(clk), .rst_n(rst_n),
@@ -326,13 +414,14 @@ module riscv_core_pipe #(
         .trap_epc(idex_pc), .trap_val(ex_trap_val),
         .mret_en(ex_mret), .sret_en(ex_sret), .mtip_i(clint_mtip),
         .trap_vec_o(csr_trap_vec), .ret_pc_o(csr_ret_pc), .priv_o(csr_priv),
-        .irq_pending(irq_pending), .irq_cause(irq_cause)
+        .irq_pending(irq_pending), .irq_cause(irq_cause), .satp_o(csr_satp)
     );
 
-    // rezultatul scris mai departe: CSR, muldiv (op M) sau ALU
     wire [31:0] ex_result = idex_is_csr    ? csr_rdata
                           : idex_is_muldiv ? mul_result
                           :                  ex_alu_result;
+    // adresa tradusa intra in MEM in locul celei virtuale
+    wire [31:0] ex_mem_addr = (need_xlate & xstate == X_RDY) ? xpaddr : ex_result;
 
     assign ex_redirect    = (ex_take_pc | ex_trap | ex_mret | ex_sret) & ~mul_stall;
     assign ex_redirect_pc = ex_trap ? csr_trap_vec
@@ -347,7 +436,7 @@ module riscv_core_pipe #(
             exmem_pc4 <= 32'b0; exmem_rd <= 5'b0; exmem_funct3 <= 3'b0;
             exmem_is_amo <= 1'b0; exmem_is_lr <= 1'b0; exmem_is_sc <= 1'b0; exmem_amo_op <= 5'b0;
             exmem_valid <= 1'b0; exmem_instr <= `RV_NOP;
-        end else if (mul_stall || ex_trap) begin
+        end else if (mul_stall || mmu_stall || ex_trap) begin
             // bula sincrona: dezactiveaza efectele (clear sincron, nu reset)
             exmem_reg_write <= 1'b0; exmem_mem_read <= 1'b0; exmem_mem_write <= 1'b0;
             exmem_wb_sel <= `WB_ALU; exmem_alu_result <= 32'b0; exmem_rs2_data <= 32'b0;
@@ -357,7 +446,7 @@ module riscv_core_pipe #(
         end else begin
             exmem_reg_write <= idex_reg_write; exmem_mem_read <= idex_mem_read;
             exmem_mem_write <= idex_mem_write; exmem_wb_sel <= idex_wb_sel;
-            exmem_alu_result <= ex_result;        // ALU sau muldiv
+            exmem_alu_result <= ex_mem_addr;
             exmem_rs2_data <= ex_rs2_fwd;
             exmem_pc4 <= idex_pc4; exmem_rd <= idex_rd; exmem_funct3 <= idex_funct3;
             exmem_is_amo <= idex_is_amo; exmem_is_lr <= idex_is_lr; exmem_is_sc <= idex_is_sc; exmem_amo_op <= idex_amo_op;
@@ -425,11 +514,12 @@ module riscv_core_pipe #(
         .rdata(clint_rdata), .mtip(clint_mtip)
     );
 
-    assign dmem_addr  = exmem_alu_result;
+    assign dmem_addr  = walker_bus ? mmu_mem_addr : exmem_alu_result;
     assign dmem_wdata = exmem_is_amo ? amo_wval :
                         exmem_is_sc  ? exmem_rs2_data : mem_store_data;
-    assign dmem_we    = (exmem_mem_write | exmem_is_amo | sc_ok) & ~clint_sel;
-    assign dmem_wstrb = (exmem_is_amo | sc_ok) ? 4'b1111 :
+    assign dmem_we    = walker_bus ? 1'b0 : ((exmem_mem_write | exmem_is_amo | sc_ok) & ~clint_sel);
+    assign dmem_wstrb = walker_bus ? 4'b0000 :
+                        (exmem_is_amo | sc_ok) ? 4'b1111 :
                         exmem_mem_write       ? mem_store_strb : 4'b0000;
 
     wire [7:0]  mem_ld_byte = dmem_rdata[8*mem_off +: 8];

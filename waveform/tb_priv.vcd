@@ -1,5 +1,5 @@
 $date
-	Sun Jun 14 02:12:45 2026
+	Sun Jun 14 02:46:44 2026
 $end
 $version
 	Icarus Verilog
@@ -38,67 +38,68 @@ $var wire 2 8 priv_o [1:0] $end
 $var wire 1 ) rd_en $end
 $var wire 1 * rst_n $end
 $var wire 1 9 s_en $end
-$var wire 32 : sie_v [31:0] $end
-$var wire 32 ; sip_v [31:0] $end
+$var wire 32 : satp_o [31:0] $end
+$var wire 32 ; sie_v [31:0] $end
+$var wire 32 < sip_v [31:0] $end
 $var wire 1 + sret_en $end
-$var wire 32 < take [31:0] $end
-$var wire 1 = to_s $end
-$var wire 32 > trap_cause [31:0] $end
+$var wire 32 = take [31:0] $end
+$var wire 1 > to_s $end
+$var wire 32 ? trap_cause [31:0] $end
 $var wire 1 - trap_en $end
-$var wire 32 ? trap_epc [31:0] $end
-$var wire 32 @ trap_val [31:0] $end
-$var wire 32 A wdata [31:0] $end
+$var wire 32 @ trap_epc [31:0] $end
+$var wire 32 A trap_val [31:0] $end
+$var wire 32 B wdata [31:0] $end
 $var wire 1 1 wr_en $end
-$var wire 32 B trap_vec_o [31:0] $end
-$var wire 32 C sstatus [31:0] $end
-$var wire 32 D ret_pc_o [31:0] $end
-$var wire 32 E mstatus [31:0] $end
-$var wire 1 F is_int $end
-$var wire 1 G irq_pending $end
-$var wire 32 H irq_cause [31:0] $end
-$var wire 1 I deleg $end
+$var wire 32 C trap_vec_o [31:0] $end
+$var wire 32 D sstatus [31:0] $end
+$var wire 32 E ret_pc_o [31:0] $end
+$var wire 32 F mstatus [31:0] $end
+$var wire 1 G is_int $end
+$var wire 1 H irq_pending $end
+$var wire 32 I irq_cause [31:0] $end
+$var wire 1 J deleg $end
 $var reg 1 % addr_valid $end
-$var reg 5 J icode [4:0] $end
-$var reg 32 K mcause [31:0] $end
-$var reg 32 L medeleg [31:0] $end
-$var reg 32 M mepc [31:0] $end
-$var reg 32 N mideleg [31:0] $end
-$var reg 1 O mie $end
-$var reg 32 P mie_r [31:0] $end
-$var reg 32 Q mip_r [31:0] $end
-$var reg 1 R mpie $end
-$var reg 2 S mpp [1:0] $end
-$var reg 32 T mscratch [31:0] $end
-$var reg 32 U mtval [31:0] $end
-$var reg 32 V mtvec [31:0] $end
-$var reg 2 W priv [1:0] $end
-$var reg 32 X rdata [31:0] $end
-$var reg 32 Y satp [31:0] $end
-$var reg 32 Z scause [31:0] $end
-$var reg 32 [ sepc [31:0] $end
-$var reg 1 \ sie $end
-$var reg 1 ] spie $end
-$var reg 1 ^ spp $end
-$var reg 32 _ sscratch [31:0] $end
-$var reg 32 ` stval [31:0] $end
-$var reg 32 a stvec [31:0] $end
+$var reg 5 K icode [4:0] $end
+$var reg 32 L mcause [31:0] $end
+$var reg 32 M medeleg [31:0] $end
+$var reg 32 N mepc [31:0] $end
+$var reg 32 O mideleg [31:0] $end
+$var reg 1 P mie $end
+$var reg 32 Q mie_r [31:0] $end
+$var reg 32 R mip_r [31:0] $end
+$var reg 1 S mpie $end
+$var reg 2 T mpp [1:0] $end
+$var reg 32 U mscratch [31:0] $end
+$var reg 32 V mtval [31:0] $end
+$var reg 32 W mtvec [31:0] $end
+$var reg 2 X priv [1:0] $end
+$var reg 32 Y rdata [31:0] $end
+$var reg 32 Z satp [31:0] $end
+$var reg 32 [ scause [31:0] $end
+$var reg 32 \ sepc [31:0] $end
+$var reg 1 ] sie $end
+$var reg 1 ^ spie $end
+$var reg 1 _ spp $end
+$var reg 32 ` sscratch [31:0] $end
+$var reg 32 a stval [31:0] $end
+$var reg 32 b stvec [31:0] $end
 $upscope $end
 $scope task chk $end
-$var reg 32 b exp [31:0] $end
-$var reg 32 c got [31:0] $end
-$var integer 32 d id [31:0] $end
+$var reg 32 c exp [31:0] $end
+$var reg 32 d got [31:0] $end
+$var integer 32 e id [31:0] $end
 $upscope $end
 $scope task pulse_mret $end
 $upscope $end
 $scope task pulse_sret $end
 $upscope $end
 $scope task pulse_trap $end
-$var reg 32 e c [31:0] $end
-$var reg 32 f epc [31:0] $end
+$var reg 32 f c [31:0] $end
+$var reg 32 g epc [31:0] $end
 $upscope $end
 $scope task wr $end
-$var reg 12 g a [11:0] $end
-$var reg 32 h d [31:0] $end
+$var reg 12 h a [11:0] $end
+$var reg 32 i d [31:0] $end
 $upscope $end
 $upscope $end
 $enddefinitions $end
@@ -107,41 +108,42 @@ $dumpall
 $end
 #0
 $dumpvars
+bx i
 bx h
 bx g
 bx f
 bx e
 bx d
 bx c
-bx b
+b0 b
 b0 a
 b0 `
-b0 _
+0_
 0^
 0]
-0\
+b0 \
 b0 [
 b0 Z
 b0 Y
-b0 X
-b11 W
+b11 X
+b0 W
 b0 V
 b0 U
 b0 T
-b0 S
-0R
+0S
+b0 R
 b0 Q
-b0 P
-0O
+0P
+b0 O
 b0 N
 b0 M
 b0 L
 b0 K
-b0 J
-0I
-b10000000000000000000000000000000 H
+0J
+b10000000000000000000000000000000 I
+0H
 0G
-0F
+b0 F
 b0 E
 b0 D
 b0 C
@@ -149,8 +151,8 @@ b0 B
 b0 A
 b0 @
 b0 ?
-b0 >
-0=
+0>
+b0 =
 b0 <
 b0 ;
 b0 :
@@ -187,11 +189,11 @@ $end
 #15000
 1'
 #20000
-b1000000000000 h
-b1100000101 g
-b11 b
+b1000000000000 i
+b1100000101 h
 b11 c
-b1 d
+b11 d
+b1 e
 1*
 0'
 #25000
@@ -200,72 +202,72 @@ b1 d
 1%
 11
 b1000000000000 0
-b1000000000000 A
+b1000000000000 B
 b1100000101 &
 b1100000101 3
 0'
 #35000
 b1000000000000 !
-b1000000000000 B
+b1000000000000 C
 b1000000000000 #
-b1000000000000 X
-b1000000000000 V
+b1000000000000 Y
+b1000000000000 W
 1'
 #40000
-b10000000000000 h
-b100000101 g
+b10000000000000 i
+b100000101 h
 01
 0'
 #45000
 1'
 #50000
 b0 #
-b0 X
+b0 Y
 11
 b10000000000000 0
-b10000000000000 A
+b10000000000000 B
 b100000101 &
 b100000101 3
 0'
 #55000
 b10000000000000 #
-b10000000000000 X
-b10000000000000 a
+b10000000000000 Y
+b10000000000000 b
 1'
 #60000
-b1100000000 h
-b1100000010 g
+b1100000000 i
+b1100000010 h
 01
 0'
 #65000
 1'
 #70000
 b0 #
-b0 X
+b0 Y
 11
 b1100000000 0
-b1100000000 A
+b1100000000 B
 b1100000010 &
 b1100000010 3
 0'
 #75000
 b1100000000 #
-b1100000000 X
-b1100000000 L
+b1100000000 Y
+b1100000000 M
 1'
 #80000
-b0 h
-b1100000000 g
+b0 i
+b1100000000 h
 01
 0'
 #85000
 1'
 #90000
 b0 #
-b0 X
+b0 Y
 11
 b0 0
-b0 A
+b0 B
 b1100000000 &
 b1100000000 3
 0'
@@ -283,153 +285,153 @@ b1100000000 3
 14
 19
 b10000000 #
-b10000000 X
+b10000000 Y
 b0 $
 b0 8
-b0 W
-b10000000 E
-1R
+b0 X
+b10000000 F
+1S
 1'
 #120000
-b10000000 f
-b1000 e
-b0 b
+b10000000 g
+b1000 f
 b0 c
-b10 d
+b0 d
+b10 e
 0(
 0'
 #125000
 1'
 #130000
 b10000000000000 !
-b10000000000000 B
-1=
-1I
+b10000000000000 C
+1>
+1J
 b10000000 .
-b10000000 ?
+b10000000 @
 b1000 ,
-b1000 >
+b1000 ?
 1-
 0'
 #135000
 09
 b1 $
 b1 8
-b1 W
-b1000 Z
-b10000000 [
+b1 X
+b1000 [
+b10000000 \
 1'
 #140000
-b10000000000000 b
 b10000000000000 c
-b100 d
+b10000000000000 d
+b100 e
 0-
 0'
 #145000
 1'
 #150000
 b1000 #
-b1000 X
+b1000 Y
 1)
 b101000010 &
 b101000010 3
 0'
 #151000
 0)
-b1000 b
 b1000 c
-b101 d
+b1000 d
+b101 e
 #155000
 1'
 #160000
 b10000000 #
-b10000000 X
+b10000000 Y
 1)
 b101000001 &
 b101000001 3
 0'
 #161000
 0)
-b10000000 b
 b10000000 c
-b110 d
+b10000000 d
+b110 e
 #165000
 1'
 #170000
 b10000000 "
-b10000000 D
+b10000000 E
 1+
 0'
 #175000
 19
 b0 $
 b0 8
-b0 W
-b10100000 E
-b100000 C
-1]
+b0 X
+b10100000 F
+b100000 D
+1^
 1'
 #180000
 b0 "
-b0 D
-b11000000 f
-b10 e
-b0 b
+b0 E
+b11000000 g
+b10 f
 b0 c
-b111 d
+b0 d
+b111 e
 0+
 0'
 #185000
 1'
 #190000
 b1000000000000 !
-b1000000000000 B
-0=
-0I
+b1000000000000 C
+0>
+0J
 b11000000 .
-b11000000 ?
+b11000000 @
 b10 ,
-b10 >
+b10 ?
 1-
 0'
 #195000
 04
 09
 b11000000 "
-b11000000 D
+b11000000 E
 b11 $
 b11 8
-b11 W
-b100000 E
-0R
-b10 K
-b11000000 M
+b11 X
+b100000 F
+0S
+b10 L
+b11000000 N
 1'
 #200000
-b11 b
 b11 c
-b1000 d
+b11 d
+b1000 e
 0-
 0'
 #205000
 1'
 #210000
 b10 #
-b10 X
+b10 Y
 1)
 b1101000010 &
 b1101000010 3
 0'
 #211000
 0)
-b10 b
 b10 c
-b1001 d
+b10 d
+b1001 e
 #215000
 1'
 #220000
 b1000000000000 #
-b1000000000000 X
+b1000000000000 Y
 1)
 b1100000101 &
 b1100000101 3
@@ -440,17 +442,17 @@ b1100000101 3
 1'
 #230000
 b100000 #
-b100000 X
+b100000 Y
 11
 b1100000000 &
 b1100000000 3
 0'
 #235000
 b0 #
-b0 X
-b0 E
-b0 C
-0]
+b0 Y
+b0 F
+b0 D
+0^
 1'
 #240000
 01
@@ -464,12 +466,12 @@ b0 C
 14
 19
 b10000000 #
-b10000000 X
+b10000000 Y
 b0 $
 b0 8
-b0 W
-b10000000 E
-1R
+b0 X
+b10000000 F
+1S
 1'
 #260000
 0(
@@ -479,7 +481,7 @@ b10000000 E
 #270000
 0%
 b1000000000000 #
-b1000000000000 X
+b1000000000000 Y
 1)
 b1100000101 &
 b1100000101 3
