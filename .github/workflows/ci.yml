@@ -1,39 +1,35 @@
 name: CI
 
-on:
-  push:
-  pull_request:
+# Ruleaza la ORICE push si pull request.
+on: [push, pull_request]
 
 jobs:
-  # ---- Regresia interna ----
+  # ---- Regresie interna: compileaza + ruleaza TOATE testbench-urile (self-checking) ----
   regression:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt-get update && sudo apt-get install -y iverilog
-      - run: make
+      - run: make            # esueaza automat daca vreun tb nu da ">>> PASS <<<"
 
-  # ---- Conformitate RISCOF pe imaginea proprie ----
+  # ---- Conformitate RISCOF pe imaginea proprie (gateaza pe I + M + A) ----
   riscof:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/valifloricescu/riscof-pipe5:latest 
+      image: ghcr.io/valifloricescu/riscof-pipe5:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Genereaza config.ini cu caile reale
         run: sed "s#__ROOT__#$GITHUB_WORKSPACE#g" riscof/config.ci.ini > riscof/config.gen.ini
       - name: RISCOF - suita I
-        run: |
-          cd riscof
-          riscof run --config=config.gen.ini \
-            --suite=$RISCV_ARCH_TEST/riscv-test-suite/rv32i_m/I \
-            --env=$RISCV_ARCH_TEST/riscv-test-suite/env --no-browser
+        run: cd riscof && riscof run --config=config.gen.ini --suite=$RISCV_ARCH_TEST/riscv-test-suite/rv32i_m/I --env=$RISCV_ARCH_TEST/riscv-test-suite/env --no-browser
       - name: RISCOF - suita M
-        run: |
-          cd riscof
-          riscof run --config=config.gen.ini \
-            --suite=$RISCV_ARCH_TEST/riscv-test-suite/rv32i_m/M \
-            --env=$RISCV_ARCH_TEST/riscv-test-suite/env --no-browser
+        run: cd riscof && riscof run --config=config.gen.ini --suite=$RISCV_ARCH_TEST/riscv-test-suite/rv32i_m/M --env=$RISCV_ARCH_TEST/riscv-test-suite/env --no-browser
+      - name: RISCOF - suita A
+        run: cd riscof && riscof run --config=config.gen.ini --suite=$RISCV_ARCH_TEST/riscv-test-suite/rv32i_m/A --env=$RISCV_ARCH_TEST/riscv-test-suite/env --no-browser
       - name: Salveaza raportul RISCOF
         if: always()
         uses: actions/upload-artifact@v4

@@ -1,6 +1,14 @@
 `timescale 1ns / 1ps
 `include "riscv_defs.vh"
-
+// ============================================================
+//  riscv_core_sc.v  -  Nucleu RV32I SINGLE-CYCLE
+// ------------------------------------------------------------
+//  Leaga toate modulele Fazei 2 intr-un datapath care executa
+//  o instructiune pe ciclu de ceas (modelul din H&P, cap. 4.4).
+//  Memoriile sunt EXTERNE (porturi), ca sa le putem inlocui cu
+//  BRAM/AXI in Faza 7. Citire instructiuni si date: asincrona.
+//  RESET ACTIV PE 0. Sintetizabil.
+// ============================================================
 module riscv_core_sc (
     input  wire        clk,
     input  wire        rst_n,
@@ -12,7 +20,7 @@ module riscv_core_sc (
     // --- port memorie date (citire asincrona, scriere sincrona) ---
     output wire [31:0] dmem_addr,
     output wire [31:0] dmem_wdata,
-    output wire [3:0]  dmem_wstrb,
+    output wire [3:0]  dmem_wstrb,   // byte-enable (strobe) pentru scriere
     output wire        dmem_we,
     input  wire [31:0] dmem_rdata
 );
@@ -51,7 +59,7 @@ module riscv_core_sc (
 
     control u_ctrl (
         .opcode(opcode), .funct3(funct3), .funct7b5(funct7b5), .funct7b0(instr[25]),
-        .funct12(instr[31:20]),
+        .funct12(instr[31:20]), .funct5(instr[31:27]),
         .reg_write(reg_write), .alu_a_src(alu_a_src), .alu_b_src(alu_b_src),
         .alu_op(alu_op), .imm_sel(imm_sel),
         .mem_read(mem_read), .mem_write(mem_write), .wb_sel(wb_sel),
@@ -85,6 +93,7 @@ module riscv_core_sc (
     alu u_alu (.a(alu_a), .b(alu_b), .alu_op(alu_op),
                .result(alu_result), .zero(alu_zero));
 
+    // comparator dedicat de branch (foloseste direct funct3)
     reg branch_cond;
     always @(*) begin
         case (funct3)
@@ -105,6 +114,7 @@ module riscv_core_sc (
     wire [31:0] mem_addr = alu_result;     // adresa = rs1 + imm
     wire [1:0]  off       = mem_addr[1:0];  // offset in cuvant
 
+    // --- scriere: aliniaza datele si genereaza strobe-ul ---
     reg  [31:0] store_data;
     reg  [3:0]  store_strb;
     always @(*) begin
@@ -135,6 +145,7 @@ module riscv_core_sc (
     assign dmem_we    = mem_write;
     assign dmem_wstrb = mem_write ? store_strb : 4'b0000;
 
+    // --- citire: extrage octetul/half-ul si extinde cu/fara semn ---
     wire [7:0]  ld_byte = dmem_rdata[8*off  +: 8];
     wire [15:0] ld_half = dmem_rdata[8*off  +: 16];
     reg  [31:0] load_data;

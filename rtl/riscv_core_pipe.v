@@ -38,6 +38,8 @@ module riscv_core_pipe #(
     reg [`WB_SEL_W-1:0]  idex_wb_sel;
     reg                  idex_branch, idex_jump, idex_jalr, idex_is_muldiv;
     reg                  idex_is_csr, idex_sys_ecall, idex_sys_ebreak, idex_sys_mret;
+    reg                  idex_is_amo, idex_is_lr, idex_is_sc;
+    reg [4:0]            idex_amo_op;
     reg [11:0]           idex_csr_addr;
     reg [31:0]           idex_rs1_data, idex_rs2_data, idex_imm, idex_pc, idex_pc4;
     reg [4:0]            idex_rd, idex_rs1, idex_rs2;
@@ -48,6 +50,8 @@ module riscv_core_pipe #(
     reg [31:0]           exmem_alu_result, exmem_rs2_data, exmem_pc4;
     reg [4:0]            exmem_rd;
     reg [2:0]            exmem_funct3;
+    reg                  exmem_is_amo, exmem_is_lr, exmem_is_sc;
+    reg [4:0]            exmem_amo_op;
     // MEM/WB
     reg [`WB_SEL_W-1:0]  memwb_wb_sel;
     reg [31:0]           memwb_alu_result, memwb_load_data, memwb_pc4;
@@ -127,17 +131,20 @@ module riscv_core_pipe #(
     wire [`WB_SEL_W-1:0]  id_wb_sel;
     wire                  id_branch, id_jump, id_jalr, id_is_muldiv;
     wire                  id_is_csr, id_sys_ecall, id_sys_ebreak, id_sys_mret;
+    wire                  id_is_amo, id_is_lr, id_is_sc;
+    wire [4:0]            id_amo_op;
 
     control u_ctrl (
         .opcode(id_opcode), .funct3(id_funct3),
         .funct7b5(id_funct7b5), .funct7b0(id_funct7b0),
-        .funct12(ifid_instr[31:20]),
+        .funct12(ifid_instr[31:20]), .funct5(ifid_instr[31:27]),
         .reg_write(id_reg_write), .alu_a_src(id_alu_a_src), .alu_b_src(id_alu_b_src),
         .alu_op(id_alu_op), .imm_sel(id_imm_sel),
         .mem_read(id_mem_read), .mem_write(id_mem_write), .wb_sel(id_wb_sel),
         .branch(id_branch), .jump(id_jump), .jalr(id_jalr), .is_muldiv(id_is_muldiv),
         .is_csr(id_is_csr), .sys_ecall(id_sys_ecall),
-        .sys_ebreak(id_sys_ebreak), .sys_mret(id_sys_mret)
+        .sys_ebreak(id_sys_ebreak), .sys_mret(id_sys_mret),
+        .is_amo(id_is_amo), .is_lr(id_is_lr), .is_sc(id_is_sc), .amo_op(id_amo_op)
     );
 
     wire [31:0] id_rs1_data, id_rs2_data;
@@ -173,6 +180,7 @@ module riscv_core_pipe #(
             idex_pc <= 32'b0; idex_pc4 <= 32'b0;
             idex_rd <= 5'b0; idex_rs1 <= 5'b0; idex_rs2 <= 5'b0; idex_funct3 <= 3'b0;
             idex_is_csr <= 1'b0; idex_sys_ecall <= 1'b0; idex_sys_ebreak <= 1'b0; idex_sys_mret <= 1'b0; idex_csr_addr <= 12'b0;
+            idex_is_amo <= 1'b0; idex_is_lr <= 1'b0; idex_is_sc <= 1'b0; idex_amo_op <= 5'b0;
             idex_valid <= 1'b0; idex_instr <= `RV_NOP;
         end else if (mul_stall) begin
             // TINE instructiunea M in EX (nu schimba nimic)
@@ -186,6 +194,7 @@ module riscv_core_pipe #(
             idex_pc <= 32'b0; idex_pc4 <= 32'b0;
             idex_rd <= 5'b0; idex_rs1 <= 5'b0; idex_rs2 <= 5'b0; idex_funct3 <= 3'b0;
             idex_is_csr <= 1'b0; idex_sys_ecall <= 1'b0; idex_sys_ebreak <= 1'b0; idex_sys_mret <= 1'b0; idex_csr_addr <= 12'b0;
+            idex_is_amo <= 1'b0; idex_is_lr <= 1'b0; idex_is_sc <= 1'b0; idex_amo_op <= 5'b0;
             idex_valid <= 1'b0; idex_instr <= `RV_NOP;
         end else begin
             idex_reg_write <= id_reg_write; idex_mem_read <= id_mem_read;
@@ -198,6 +207,7 @@ module riscv_core_pipe #(
             idex_rd <= id_rd; idex_rs1 <= id_rs1; idex_rs2 <= id_rs2;
             idex_funct3 <= id_funct3;
             idex_is_csr <= id_is_csr; idex_sys_ecall <= id_sys_ecall; idex_sys_ebreak <= id_sys_ebreak; idex_sys_mret <= id_sys_mret; idex_csr_addr <= ifid_instr[31:20];
+            idex_is_amo <= id_is_amo; idex_is_lr <= id_is_lr; idex_is_sc <= id_is_sc; idex_amo_op <= id_amo_op;
             idex_valid <= ifid_valid; idex_instr <= ifid_instr;
         end
     end
@@ -310,10 +320,18 @@ module riscv_core_pipe #(
 
     // registru EX/MEM (bula la mul_stall sau cand instructiunea ia trap)
     always @(posedge clk or negedge rst_n) begin
-        if (!rst_n || mul_stall || ex_trap) begin
+        if (!rst_n) begin
             exmem_reg_write <= 1'b0; exmem_mem_read <= 1'b0; exmem_mem_write <= 1'b0;
             exmem_wb_sel <= `WB_ALU; exmem_alu_result <= 32'b0; exmem_rs2_data <= 32'b0;
             exmem_pc4 <= 32'b0; exmem_rd <= 5'b0; exmem_funct3 <= 3'b0;
+            exmem_is_amo <= 1'b0; exmem_is_lr <= 1'b0; exmem_is_sc <= 1'b0; exmem_amo_op <= 5'b0;
+            exmem_valid <= 1'b0; exmem_instr <= `RV_NOP;
+        end else if (mul_stall || ex_trap) begin
+            // bula sincrona: dezactiveaza efectele (clear sincron, nu reset)
+            exmem_reg_write <= 1'b0; exmem_mem_read <= 1'b0; exmem_mem_write <= 1'b0;
+            exmem_wb_sel <= `WB_ALU; exmem_alu_result <= 32'b0; exmem_rs2_data <= 32'b0;
+            exmem_pc4 <= 32'b0; exmem_rd <= 5'b0; exmem_funct3 <= 3'b0;
+            exmem_is_amo <= 1'b0; exmem_is_lr <= 1'b0; exmem_is_sc <= 1'b0; exmem_amo_op <= 5'b0;
             exmem_valid <= 1'b0; exmem_instr <= `RV_NOP;
         end else begin
             exmem_reg_write <= idex_reg_write; exmem_mem_read <= idex_mem_read;
@@ -321,6 +339,7 @@ module riscv_core_pipe #(
             exmem_alu_result <= ex_result;        // ALU sau muldiv
             exmem_rs2_data <= ex_rs2_fwd;
             exmem_pc4 <= idex_pc4; exmem_rd <= idex_rd; exmem_funct3 <= idex_funct3;
+            exmem_is_amo <= idex_is_amo; exmem_is_lr <= idex_is_lr; exmem_is_sc <= idex_is_sc; exmem_amo_op <= idex_amo_op;
             exmem_valid <= idex_valid; exmem_instr <= idex_instr;
         end
     end
@@ -353,10 +372,33 @@ module riscv_core_pipe #(
         endcase
     end
 
+    // ============================================================
+    //  Extensia A: AMO read-modify-write + LR/SC
+    // ============================================================
+    wire [31:0] amo_wval;
+    atomic_unit u_amo (
+        .amo_op(exmem_amo_op), .mem_val(dmem_rdata),
+        .rs2_val(exmem_rs2_data), .result(amo_wval)
+    );
+    // rezervare pentru LR/SC (un singur hart): set la LR, golita la orice SC
+    reg        resv_valid;
+    reg [31:0] resv_addr;
+    wire sc_ok = exmem_is_sc && resv_valid && (resv_addr == exmem_alu_result);
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
+            resv_valid <= 1'b0;
+        else if (exmem_valid && exmem_is_lr) begin
+            resv_valid <= 1'b1; resv_addr <= exmem_alu_result;
+        end else if (exmem_valid && exmem_is_sc)
+            resv_valid <= 1'b0;
+    end
+
     assign dmem_addr  = exmem_alu_result;
-    assign dmem_wdata = mem_store_data;
-    assign dmem_we    = exmem_mem_write;
-    assign dmem_wstrb = exmem_mem_write ? mem_store_strb : 4'b0000;
+    assign dmem_wdata = exmem_is_amo ? amo_wval :
+                        exmem_is_sc  ? exmem_rs2_data : mem_store_data;
+    assign dmem_we    = exmem_mem_write | exmem_is_amo | sc_ok;
+    assign dmem_wstrb = (exmem_is_amo | sc_ok) ? 4'b1111 :
+                        exmem_mem_write       ? mem_store_strb : 4'b0000;
 
     wire [7:0]  mem_ld_byte = dmem_rdata[8*mem_off +: 8];
     wire [15:0] mem_ld_half = dmem_rdata[8*mem_off +: 16];
@@ -370,6 +412,8 @@ module riscv_core_pipe #(
             `F3_LHU: mem_load_data = {16'b0, mem_ld_half};
             default: mem_load_data = dmem_rdata;
         endcase
+        // SC: rd primeste statusul (0 = succes, 1 = esec), nu data din memorie
+        if (exmem_is_sc) mem_load_data = {31'b0, ~sc_ok};
     end
 
     // registru MEM/WB

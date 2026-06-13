@@ -1,3 +1,18 @@
+// ============================================================
+//  riscv_defs.vh  -  Definitii ISA pentru nucleul RV32IM
+// ------------------------------------------------------------
+//  Faza 1: opcode-uri, campuri funct3/funct7, encodarea ALU,
+//  extensia M si extractoare de campuri din instructiune.
+//  Toate sunt macro-uri de preprocesor => 100% sintetizabile.
+// ============================================================
+//  CONVENTII DE PROIECT (valabile in tot rtl/):
+//    * RESET ACTIV PE 0 (active-low): semnal `rst_n`.
+//        always @(posedge clk or negedge rst_n)
+//          if (!rst_n) <reset> else <logica>
+//    * Doar RTL SINTETIZABIL in rtl/ (fara #delay/initial de stare).
+//    * Constructele de simulare stau exclusiv in test/.
+// ============================================================
+
 `ifndef RISCV_DEFS_VH
 `define RISCV_DEFS_VH
 
@@ -39,6 +54,22 @@
 `define OPC_OP       7'b0110011         // R  - ALU cu registre (+ extensia M)
 `define OPC_MISC_MEM 7'b0001111         // I  - FENCE
 `define OPC_SYSTEM   7'b1110011         // I  - ECALL/EBREAK/CSR
+`define OPC_AMO      7'b0101111         // A  - atomice (LR/SC/AMO)
+
+//  Extensia A: funct3 = latime; aici doar word (.w)
+`define F3_AMO_W     3'b010
+//  funct5 = instr[31:27] (instr[31:25] fara aq/rl)
+`define AMO_LR       5'b00010
+`define AMO_SC       5'b00011
+`define AMO_SWAP     5'b00001
+`define AMO_ADD      5'b00000
+`define AMO_XOR      5'b00100
+`define AMO_AND      5'b01100
+`define AMO_OR       5'b01000
+`define AMO_MIN      5'b10000
+`define AMO_MAX      5'b10100
+`define AMO_MINU     5'b11000
+`define AMO_MAXU     5'b11100
 
 // ------------------------------------------------------------
 //  funct3 pentru OP / OP-IMM (aritmetica/logica)
@@ -169,6 +200,7 @@
 `define IMM_B        3'd2               // BRANCH
 `define IMM_U        3'd3               // LUI, AUIPC
 `define IMM_J        3'd4               // JAL
+`define IMM_ZERO     3'd5               // immediate = 0 (adresa atomicelor = rs1+0)
 
 // ------------------------------------------------------------
 //  Selectorul sursei de writeback (ce se scrie in registrul rd)

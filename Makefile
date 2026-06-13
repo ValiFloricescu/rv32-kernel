@@ -37,7 +37,7 @@ LOG := $(SIM_DIR)/$(TBNAME).log
 VCD := $(WAVE_DIR)/$(TBNAME).vcd
 
 # ============================================================
-.PHONY: all regress test run build wave sanity clean distclean help
+.PHONY: all regress test run build wave sanity clean distclean help compliance
 
 all: regress               ## (implicit) ruleaza toata suita de regresie
 
@@ -67,6 +67,18 @@ regress test:              ## compileaza + ruleaza TOATE testbench-urile
 	if [ $$fail -ne 0 ]; then echo "  PICATE:$$failed"; echo "============================================"; exit 1; fi; \
 	echo "  >>> TOATE TESTELE TREC <<<"; \
 	echo "============================================"
+
+COMPLIANCE_SUITES ?= I M A
+compliance:                ## ruleaza conformitatea RISCOF (in container: I/M/A)
+	@command -v riscof >/dev/null || { echo "riscof lipseste: ruleaza in containerul Docker"; exit 1; }
+	@cd riscof && sed "s#__ROOT__#$$(cd .. && pwd)#g" config.ci.ini > config.gen.ini
+	@set -e; for s in $(COMPLIANCE_SUITES); do \
+	  echo "=== RISCOF suita $$s ==="; \
+	  ( cd riscof && riscof run --config=config.gen.ini \
+	      --suite=$$RISCV_ARCH_TEST/riscv-test-suite/rv32i_m/$$s \
+	      --env=$$RISCV_ARCH_TEST/riscv-test-suite/env --no-browser ); \
+	done; \
+	echo ">>> CONFORMITATE $(COMPLIANCE_SUITES) OK <<<"
 
 build:                     ## compileaza un singur test: $(TB)
 	@mkdir -p $(SIM_DIR) $(WAVE_DIR)
