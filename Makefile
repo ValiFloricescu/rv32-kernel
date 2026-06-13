@@ -37,7 +37,7 @@ LOG := $(SIM_DIR)/$(TBNAME).log
 VCD := $(WAVE_DIR)/$(TBNAME).vcd
 
 # ============================================================
-.PHONY: all regress test run build wave sanity clean distclean help compliance synth-check
+.PHONY: all regress test run build wave sanity clean distclean help compliance synth-check cosim-all random verify
 
 all: regress               ## (implicit) ruleaza toata suita de regresie
 
@@ -82,6 +82,20 @@ compliance:                ## ruleaza conformitatea RISCOF (in container: I/M/A)
 
 synth-check:               ## verifica sintetizabilitatea (yosys: fara latch-uri)
 	@./scripts/check_synth.sh
+
+PIPE5_ROOT := $(CURDIR)
+
+cosim-all:                 ## lockstep pe toate testele RISCOF (in container)
+	@PIPE5_ROOT=$(CURDIR) SPIKE_ISA=rv32ima_zicsr ./verif/cosim/run_cosim_all.sh
+
+random:                    ## testare aleatoare lockstep vs Spike (in container)
+	@PIPE5_ROOT=$(CURDIR) SPIKE_ISA=rv32ima_zicsr GROUPS=$${GROUPS:-base,m,a} K=$${K:-50} ./verif/random/run_random.sh
+
+verify: regress synth-check compliance cosim-all random  ## validare COMPLETA (in container)
+	@echo "============================================"
+	@echo "  >>> VALIDARE COMPLETA TRECUTA <<<"
+	@echo "  regresie + sinteza + RISCOF + lockstep + aleator"
+	@echo "============================================"
 
 build:                     ## compileaza un singur test: $(TB)
 	@mkdir -p $(SIM_DIR) $(WAVE_DIR)

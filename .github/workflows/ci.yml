@@ -38,6 +38,10 @@ jobs:
         run: cd riscof && riscof run --config=config.gen.ini --suite=$RISCV_ARCH_TEST/riscv-test-suite/rv32i_m/M --env=$RISCV_ARCH_TEST/riscv-test-suite/env --no-browser
       - name: RISCOF - suita A
         run: cd riscof && riscof run --config=config.gen.ini --suite=$RISCV_ARCH_TEST/riscv-test-suite/rv32i_m/A --env=$RISCV_ARCH_TEST/riscv-test-suite/env --no-browser
+      - name: Lockstep pe suita RISCOF (DUT vs Spike, instructiune-cu-instructiune)
+        run: PIPE5_ROOT=$GITHUB_WORKSPACE SPIKE_ISA=rv32ima_zicsr ./verif/cosim/run_cosim_all.sh
+      - name: Testare aleatoare diferentiala (DUT vs Spike)
+        run: PIPE5_ROOT=$GITHUB_WORKSPACE SPIKE_ISA=rv32ima_zicsr K=20 NINSTR=300 ./verif/random/run_random.sh
       - name: Salveaza raportul RISCOF
         if: always()
         uses: actions/upload-artifact@v4

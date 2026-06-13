@@ -66,7 +66,10 @@ module tb_cosim;
 
     integer k;
     initial begin
-        for (k = 0; k < WORDS; k = k + 1) mem[k] = `RV_NOP;
+        // memorie initializata la ZERO, ca in Spike (memoria necitita = 0).
+        // Programele de co-simulare nu executa niciodata cod necompletat
+        // (se opresc la bucla terminala), deci nu e nevoie de RV_NOP aici.
+        for (k = 0; k < WORDS; k = k + 1) mem[k] = 32'h0;
         $readmemh(`PROG_HEX, mem);
         tf = $fopen(`DUT_TRACE, "w");
         $display("[COSIM] rulez %s -> %s", `PROG_HEX, `DUT_TRACE);

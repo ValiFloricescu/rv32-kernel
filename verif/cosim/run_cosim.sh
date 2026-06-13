@@ -24,7 +24,7 @@ HEX="$WORK/dut.hex"
 # fisierele nucleului (fara cele FPGA care cer IP Vivado)
 CORE="$ROOT/rtl/alu.v $ROOT/rtl/control.v $ROOT/rtl/csr.v $ROOT/rtl/forwarding.v \
 $ROOT/rtl/hazard.v $ROOT/rtl/imm_gen.v $ROOT/rtl/muldiv.v $ROOT/rtl/regfile.v \
-$ROOT/rtl/riscv_core_pipe.v"
+$ROOT/rtl/atomic_unit.v $ROOT/rtl/riscv_core_pipe.v"
 
 # 1) ELF -> binar -> hex pe cuvinte (little-endian), identic cu run_dut.sh
 "${PREFIX}objcopy" -O binary "$ELF" "$WORK/dut.bin"

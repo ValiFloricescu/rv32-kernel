@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       build-essential git autoconf automake \
       device-tree-compiler \
       python3 python3-pip \
-      iverilog \
+      iverilog yosys \
       gcc-riscv64-unknown-elf binutils-riscv64-unknown-elf \
       ca-certificates \
     && rm -rf /var/lib/apt/lists/*
