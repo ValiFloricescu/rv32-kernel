@@ -37,7 +37,7 @@ module riscv_core_pipe #(
     reg                  idex_mem_read, idex_mem_write;
     reg [`WB_SEL_W-1:0]  idex_wb_sel;
     reg                  idex_branch, idex_jump, idex_jalr, idex_is_muldiv;
-    reg                  idex_is_csr, idex_sys_ecall, idex_sys_ebreak, idex_sys_mret;
+    reg                  idex_is_csr, idex_sys_ecall, idex_sys_ebreak, idex_sys_mret, idex_sys_sret;
     reg                  idex_is_amo, idex_is_lr, idex_is_sc;
     reg [4:0]            idex_amo_op;
     reg [11:0]           idex_csr_addr;
@@ -130,7 +130,7 @@ module riscv_core_pipe #(
     wire                  id_mem_read, id_mem_write;
     wire [`WB_SEL_W-1:0]  id_wb_sel;
     wire                  id_branch, id_jump, id_jalr, id_is_muldiv;
-    wire                  id_is_csr, id_sys_ecall, id_sys_ebreak, id_sys_mret;
+    wire                  id_is_csr, id_sys_ecall, id_sys_ebreak, id_sys_mret, id_sys_sret;
     wire                  id_is_amo, id_is_lr, id_is_sc;
     wire [4:0]            id_amo_op;
 
@@ -143,7 +143,7 @@ module riscv_core_pipe #(
         .mem_read(id_mem_read), .mem_write(id_mem_write), .wb_sel(id_wb_sel),
         .branch(id_branch), .jump(id_jump), .jalr(id_jalr), .is_muldiv(id_is_muldiv),
         .is_csr(id_is_csr), .sys_ecall(id_sys_ecall),
-        .sys_ebreak(id_sys_ebreak), .sys_mret(id_sys_mret),
+        .sys_ebreak(id_sys_ebreak), .sys_mret(id_sys_mret), .sys_sret(id_sys_sret),
         .is_amo(id_is_amo), .is_lr(id_is_lr), .is_sc(id_is_sc), .amo_op(id_amo_op)
     );
 
@@ -179,7 +179,7 @@ module riscv_core_pipe #(
             idex_rs1_data <= 32'b0; idex_rs2_data <= 32'b0; idex_imm <= 32'b0;
             idex_pc <= 32'b0; idex_pc4 <= 32'b0;
             idex_rd <= 5'b0; idex_rs1 <= 5'b0; idex_rs2 <= 5'b0; idex_funct3 <= 3'b0;
-            idex_is_csr <= 1'b0; idex_sys_ecall <= 1'b0; idex_sys_ebreak <= 1'b0; idex_sys_mret <= 1'b0; idex_csr_addr <= 12'b0;
+            idex_is_csr <= 1'b0; idex_sys_ecall <= 1'b0; idex_sys_ebreak <= 1'b0; idex_sys_mret <= 1'b0; idex_sys_sret <= 1'b0; idex_csr_addr <= 12'b0;
             idex_is_amo <= 1'b0; idex_is_lr <= 1'b0; idex_is_sc <= 1'b0; idex_amo_op <= 5'b0;
             idex_valid <= 1'b0; idex_instr <= `RV_NOP;
         end else if (mul_stall) begin
@@ -193,7 +193,7 @@ module riscv_core_pipe #(
             idex_rs1_data <= 32'b0; idex_rs2_data <= 32'b0; idex_imm <= 32'b0;
             idex_pc <= 32'b0; idex_pc4 <= 32'b0;
             idex_rd <= 5'b0; idex_rs1 <= 5'b0; idex_rs2 <= 5'b0; idex_funct3 <= 3'b0;
-            idex_is_csr <= 1'b0; idex_sys_ecall <= 1'b0; idex_sys_ebreak <= 1'b0; idex_sys_mret <= 1'b0; idex_csr_addr <= 12'b0;
+            idex_is_csr <= 1'b0; idex_sys_ecall <= 1'b0; idex_sys_ebreak <= 1'b0; idex_sys_mret <= 1'b0; idex_sys_sret <= 1'b0; idex_csr_addr <= 12'b0;
             idex_is_amo <= 1'b0; idex_is_lr <= 1'b0; idex_is_sc <= 1'b0; idex_amo_op <= 5'b0;
             idex_valid <= 1'b0; idex_instr <= `RV_NOP;
         end else begin
@@ -206,7 +206,7 @@ module riscv_core_pipe #(
             idex_imm <= id_imm; idex_pc <= ifid_pc; idex_pc4 <= ifid_pc4;
             idex_rd <= id_rd; idex_rs1 <= id_rs1; idex_rs2 <= id_rs2;
             idex_funct3 <= id_funct3;
-            idex_is_csr <= id_is_csr; idex_sys_ecall <= id_sys_ecall; idex_sys_ebreak <= id_sys_ebreak; idex_sys_mret <= id_sys_mret; idex_csr_addr <= ifid_instr[31:20];
+            idex_is_csr <= id_is_csr; idex_sys_ecall <= id_sys_ecall; idex_sys_ebreak <= id_sys_ebreak; idex_sys_mret <= id_sys_mret; idex_sys_sret <= id_sys_sret; idex_csr_addr <= ifid_instr[31:20];
             idex_is_amo <= id_is_amo; idex_is_lr <= id_is_lr; idex_is_sc <= id_is_sc; idex_amo_op <= id_amo_op;
             idex_valid <= ifid_valid; idex_instr <= ifid_instr;
         end
@@ -259,23 +259,26 @@ module riscv_core_pipe #(
     // ============================================================
     //  CSR (Zicsr) + trap, rezolvate in EX
     // ============================================================
-    wire [31:0] csr_rdata, csr_mtvec, csr_mepc;
+    wire [31:0] csr_rdata, csr_trap_vec, csr_ret_pc;
     wire        csr_addr_valid;
+    wire [1:0]  csr_priv;
 
-    // sursa pentru scriere: registru (rs1) sau imediat (zimm = campul rs1)
     wire [31:0] csr_src   = idex_funct3[2] ? {27'b0, idex_rs1} : ex_rs1_fwd;
     wire [1:0]  csr_op    = idex_funct3[1:0];           // 01=RW 10=RS 11=RC
     wire [31:0] csr_wval  = (csr_op == 2'b01) ? csr_src
                           : (csr_op == 2'b10) ? (csr_rdata |  csr_src)
                           :                     (csr_rdata & ~csr_src);
-    // RW scrie mereu; RS/RC scriu doar daca sursa (rs1/zimm) != x0
     wire        csr_wr    = idex_is_csr & ((csr_op == 2'b01) | (idex_rs1 != 5'b0));
 
-    // detectare trap / mret (gate cu ~mul_stall: o singura instr in EX)
-    wire        csr_illegal = idex_is_csr & ~csr_addr_valid;
-    wire        ex_trap = (idex_sys_ecall | idex_sys_ebreak | csr_illegal) & ~mul_stall;
-    wire        ex_mret =  idex_sys_mret & ~mul_stall;
-    wire [31:0] ex_trap_cause = idex_sys_ecall  ? `CAUSE_ECALL_M
+    wire        csr_illegal  = idex_is_csr & ~csr_addr_valid;
+    wire        mret_ok      = idex_sys_mret & (csr_priv == `PRIV_M);
+    wire        sret_ok      = idex_sys_sret & (csr_priv != `PRIV_U);
+    wire        xret_illegal = (idex_sys_mret & ~mret_ok) | (idex_sys_sret & ~sret_ok);
+
+    wire        ex_trap = (idex_sys_ecall | idex_sys_ebreak | csr_illegal | xret_illegal) & ~mul_stall;
+    wire        ex_mret = mret_ok & ~mul_stall;
+    wire        ex_sret = sret_ok & ~mul_stall;
+    wire [31:0] ex_trap_cause = idex_sys_ecall  ? (32'd8 + {30'b0, csr_priv})
                               : idex_sys_ebreak  ? `CAUSE_BREAKPOINT
                               :                    `CAUSE_ILLEGAL;
 
@@ -285,8 +288,9 @@ module riscv_core_pipe #(
         .addr(idex_csr_addr), .wdata(csr_wval),
         .rdata(csr_rdata), .addr_valid(csr_addr_valid),
         .trap_en(ex_trap), .trap_cause(ex_trap_cause),
-        .trap_epc(idex_pc), .trap_val(32'b0), .mret_en(ex_mret),
-        .mtvec_o(csr_mtvec), .mepc_o(csr_mepc)
+        .trap_epc(idex_pc), .trap_val(32'b0),
+        .mret_en(ex_mret), .sret_en(ex_sret),
+        .trap_vec_o(csr_trap_vec), .ret_pc_o(csr_ret_pc), .priv_o(csr_priv)
     );
 
     // rezultatul scris mai departe: CSR, muldiv (op M) sau ALU
@@ -311,10 +315,9 @@ module riscv_core_pipe #(
     wire [31:0] ex_pc_target    = idex_pc + idex_imm;
     wire [31:0] ex_jalr_target  = (ex_rs1_fwd + idex_imm) & ~32'b1;
 
-    //  redirect: branch/jump (ca pana acum) + trap (->mtvec) + mret (->mepc)
-    assign ex_redirect    = (ex_branch_taken | idex_jump | ex_trap | ex_mret) & ~mul_stall;
-    assign ex_redirect_pc = ex_trap ? csr_mtvec
-                          : ex_mret ? csr_mepc
+    assign ex_redirect    = (ex_branch_taken | idex_jump | ex_trap | ex_mret | ex_sret) & ~mul_stall;
+    assign ex_redirect_pc = ex_trap ? csr_trap_vec
+                          : (ex_mret | ex_sret) ? csr_ret_pc
                           : (idex_jump && idex_jalr) ? ex_jalr_target
                           :                            ex_pc_target;
 

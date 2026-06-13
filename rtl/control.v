@@ -37,6 +37,7 @@ module control (
     output reg                   sys_ecall,    // ECALL  -> trap
     output reg                   sys_ebreak,   // EBREAK -> trap
     output reg                   sys_mret,     // MRET   -> revenire din trap
+    output reg                   sys_sret,     // SRET   -> revenire din trap (S)
     output reg                   is_amo,       // AMO read-modify-write (extensia A)
     output reg                   is_lr,        // load-reserved
     output reg                   is_sc,        // store-conditional
@@ -78,6 +79,7 @@ module control (
         sys_ecall = 1'b0;
         sys_ebreak= 1'b0;
         sys_mret  = 1'b0;
+        sys_sret  = 1'b0;
         is_amo    = 1'b0;
         is_lr     = 1'b0;
         is_sc     = 1'b0;
@@ -174,6 +176,7 @@ module control (
                         `SYS_ECALL : sys_ecall  = 1'b1;
                         `SYS_EBREAK: sys_ebreak = 1'b1;
                         `SYS_MRET  : sys_mret   = 1'b1;
+                        `SYS_SRET  : sys_sret   = 1'b1;
                         default    : ;            // WFI etc.: tratat ca NOP
                     endcase
                 end else begin

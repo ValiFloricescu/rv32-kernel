@@ -7,7 +7,7 @@
 //  ruleaza handler-ul, ajusteaza mepc si revine cu MRET.
 //
 //    x7  = 0x123        (csrr mscratch dupa csrw)
-//    x8  = 0x40001100   (csrr misa)
+//    x8  = 0x40141101   (csrr misa)
 //    x9  = 11           (mcause = ECALL din mod M)
 //    x20 = 42           (handler a rulat)
 //    x21 = 7            (am revenit din trap via MRET)
@@ -61,7 +61,7 @@ module tb_core_pipe_trap;
         rst_n=0; @(negedge clk); @(negedge clk); rst_n=1;
         for (c=0;c<200;c=c+1) @(negedge clk);
         chk(1, dut.u_rf.regs[7],  32'h0000_0123);
-        chk(2, dut.u_rf.regs[8],  `MISA_RV32IM);
+        chk(2, dut.u_rf.regs[8],  `MISA_RV32IMA);
         chk(3, dut.u_rf.regs[9],  `CAUSE_ECALL_M);
         chk(4, dut.u_rf.regs[20], 32'd42);
         chk(5, dut.u_rf.regs[21], 32'd7);

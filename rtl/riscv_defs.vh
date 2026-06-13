@@ -144,6 +144,8 @@
 `define SYS_ECALL    12'h000
 `define SYS_EBREAK   12'h001
 `define SYS_MRET     12'h302
+`define SYS_SRET     12'h102
+`define SYS_WFI      12'h105
 
 // ------------------------------------------------------------
 //  Adrese CSR (mod masina) - subset minim pentru Zicsr + trap
@@ -162,14 +164,34 @@
 `define CSR_MIMPID    12'hF13
 `define CSR_MHARTID   12'hF14
 
+`define CSR_MEDELEG  12'h302
+`define CSR_MIDELEG  12'h303
+`define CSR_SSTATUS  12'h100
+`define CSR_SIE      12'h104
+`define CSR_STVEC    12'h105
+`define CSR_SSCRATCH 12'h140
+`define CSR_SEPC     12'h141
+`define CSR_SCAUSE   12'h142
+`define CSR_STVAL    12'h143
+`define CSR_SIP      12'h144
+`define CSR_SATP     12'h180
+
+`define PRIV_U       2'b00
+`define PRIV_S       2'b01
+`define PRIV_M       2'b11
+
 //  misa pentru RV32IM: MXL=01 (32b) | I (bit8) | M (bit12)
 `define MISA_RV32IM  32'h40001100
 
 // ------------------------------------------------------------
 //  Cauze de trap (mcause, bitul de interrupt = 0 pentru exceptii)
 // ------------------------------------------------------------
+`define MISA_RV32IMA 32'h40141101
+
 `define CAUSE_ILLEGAL    32'd2
 `define CAUSE_BREAKPOINT 32'd3
+`define CAUSE_ECALL_U    32'd8
+`define CAUSE_ECALL_S    32'd9
 `define CAUSE_ECALL_M    32'd11
 
 // ------------------------------------------------------------
