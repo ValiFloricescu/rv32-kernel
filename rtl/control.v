@@ -38,6 +38,7 @@ module control (
     output reg                   sys_ebreak,   // EBREAK -> trap
     output reg                   sys_mret,     // MRET   -> revenire din trap
     output reg                   sys_sret,     // SRET   -> revenire din trap (S)
+    output reg                   illegal,      // opcode nerecunoscut -> trap
     output reg                   is_amo,       // AMO read-modify-write (extensia A)
     output reg                   is_lr,        // load-reserved
     output reg                   is_sc,        // store-conditional
@@ -80,6 +81,7 @@ module control (
         sys_ebreak= 1'b0;
         sys_mret  = 1'b0;
         sys_sret  = 1'b0;
+        illegal   = 1'b0;
         is_amo    = 1'b0;
         is_lr     = 1'b0;
         is_sc     = 1'b0;
@@ -206,7 +208,8 @@ module control (
             end
 
             // ---- opcode necunoscut: ramane NOP (fara efecte) ----
-            default: ;
+            `OPC_MISC_MEM: ;   // FENCE / FENCE.I: NOP pe nucleu in-order fara cache
+            default: illegal = 1'b1;
         endcase
     end
 

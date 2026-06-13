@@ -68,7 +68,7 @@ regress test:              ## compileaza + ruleaza TOATE testbench-urile
 	echo "  >>> TOATE TESTELE TREC <<<"; \
 	echo "============================================"
 
-COMPLIANCE_SUITES ?= I M A
+COMPLIANCE_SUITES ?= I M A privilege
 compliance:                ## ruleaza conformitatea RISCOF (in container: I/M/A)
 	@command -v riscof >/dev/null || { echo "riscof lipseste: ruleaza in containerul Docker"; exit 1; }
 	@cd riscof && sed "s#__ROOT__#$$(cd .. && pwd)#g" config.ci.ini > config.gen.ini

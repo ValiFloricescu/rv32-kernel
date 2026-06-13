@@ -1,5 +1,5 @@
 $date
-	Sat Jun 13 19:48:41 2026
+	Sat Jun 13 20:34:27 2026
 $end
 $version
 	Icarus Verilog
@@ -50,27 +50,28 @@ $var reg 1 + alu_b_src $end
 $var reg 4 B alu_op [3:0] $end
 $var reg 5 C amo_op [4:0] $end
 $var reg 1 ) branch $end
-$var reg 3 D imm_sel [2:0] $end
-$var reg 1 E is_amo $end
-$var reg 1 F is_csr $end
-$var reg 1 G is_lr $end
-$var reg 1 H is_muldiv $end
-$var reg 1 I is_sc $end
+$var reg 1 D illegal $end
+$var reg 3 E imm_sel [2:0] $end
+$var reg 1 F is_amo $end
+$var reg 1 G is_csr $end
+$var reg 1 H is_lr $end
+$var reg 1 I is_muldiv $end
+$var reg 1 J is_sc $end
 $var reg 1 & jalr $end
 $var reg 1 % jump $end
 $var reg 1 $ mem_read $end
 $var reg 1 # mem_write $end
 $var reg 1 " reg_write $end
-$var reg 1 J sys_ebreak $end
-$var reg 1 K sys_ecall $end
-$var reg 1 L sys_mret $end
-$var reg 1 M sys_sret $end
-$var reg 2 N wb_sel [1:0] $end
+$var reg 1 K sys_ebreak $end
+$var reg 1 L sys_ecall $end
+$var reg 1 M sys_mret $end
+$var reg 1 N sys_sret $end
+$var reg 2 O wb_sel [1:0] $end
 $upscope $end
 $scope task chk $end
-$var reg 17 O exp [16:0] $end
-$var reg 17 P got [16:0] $end
-$var integer 32 Q id [31:0] $end
+$var reg 17 P exp [16:0] $end
+$var reg 17 Q got [16:0] $end
+$var integer 32 R id [31:0] $end
 $upscope $end
 $upscope $end
 $enddefinitions $end
@@ -79,10 +80,11 @@ $dumpall
 $end
 #0
 $dumpvars
+bx R
 bx Q
 bx P
-bx O
-b0 N
+b0 O
+0N
 0M
 0L
 0K
@@ -91,8 +93,8 @@ b0 N
 0H
 0G
 0F
-0E
-b0 D
+b0 E
+0D
 b0 C
 b0 B
 b0 A
@@ -136,7 +138,7 @@ b10000010000000000 (
 1"
 b1 A
 1.
-b10000000000000000 O
+b10000000000000000 P
 1:
 01
 02
@@ -148,8 +150,8 @@ b0 ;
 03
 05
 06
-b10000000000000000 P
-b1 Q
+b10000000000000000 Q
+b1 R
 #2000
 b11 *
 b11 B
@@ -159,10 +161,10 @@ b11 A
 0.
 b10 -
 b10 =
-b10000010000000000 O
-b1 9
 b10000010000000000 P
-b10 Q
+b1 9
+b10000010000000000 Q
+b10 R
 #3000
 b111 *
 b111 B
@@ -172,10 +174,10 @@ b111 A
 1.
 b101 -
 b101 =
-b10000110000000000 O
-b11 9
 b10000110000000000 P
-b11 Q
+b11 9
+b10000110000000000 Q
+b11 R
 #4000
 b0 A
 1+
@@ -188,21 +190,21 @@ b0 -
 b0 =
 b10011 /
 b10011 @
-b10001110000000000 O
-b111 9
 b10001110000000000 P
-b100 Q
+b111 9
+b10001110000000000 Q
+b100 R
 #5000
 1+
 b10100000000000000 (
 1"
 b1 A
 1.
-b10100000000000000 O
+b10100000000000000 P
 12
 b0 9
-b10100000000000000 P
-b101 Q
+b10100000000000000 Q
+b101 R
 #6000
 b111 *
 b111 B
@@ -212,11 +214,11 @@ b10101110000000000 (
 b111 A
 b101 -
 b101 =
-b110 Q
+b110 R
 #7000
 b11 A
 b1 !
-b1 N
+b1 O
 1$
 b0 *
 b0 B
@@ -228,110 +230,110 @@ b10 -
 b10 =
 b11 /
 b11 @
-b10101110000000000 O
-b111 9
 b10101110000000000 P
-b111 Q
+b111 9
+b10101110000000000 Q
+b111 R
 #8000
 1#
 b1 '
-b1 D
+b1 E
 b0 !
-b0 N
+b0 O
 0$
 1+
 b100000010100000 (
 0"
 b100011 /
 b100011 @
-b10100000001001000 O
+b10100000001001000 P
 b0 9
 17
 b1 ;
-b10100000001001000 P
-b1000 Q
+b10100000001001000 Q
+b1000 R
 #9000
 b0 A
 1)
 0#
 b10 '
-b10 D
+b10 E
 b100000100 (
 0+
 b0 -
 b0 =
 b1100011 /
 b1100011 @
-b100000010100000 O
+b100000010100000 P
 0:
 b1 4
 07
 18
 b0 ;
-b100000010100000 P
-b1001 Q
+b100000010100000 Q
+b1001 R
 #10000
 b10 !
-b10 N
+b10 O
 1%
 1"
 0)
 b10000001000010010 (
 b100 '
-b100 D
+b100 E
 b1101111 /
 b1101111 @
-b100000100 O
+b100000100 P
 02
 b10 4
 08
 13
-b100000100 P
-b1010 Q
+b100000100 Q
+b1010 R
 #11000
 1+
 1&
 1%
 b10 !
-b10 N
+b10 O
 b0 '
-b0 D
+b0 E
 b10100000000010011 (
 1"
 b1100111 /
 b1100111 @
-b10000001000010010 O
+b10000001000010010 P
 1:
 b100 4
 b10 ;
 03
 15
-b10000001000010010 P
-b1011 Q
+b10000001000010010 Q
+b1011 R
 #12000
 b1010 *
 b1010 B
 b11 '
-b11 D
+b11 E
 0&
 0%
 b0 !
-b0 N
+b0 O
 1+
 b10110100110000000 (
 1"
 b110111 /
 b110111 @
-b10100000000010011 O
+b10100000000010011 P
 12
 b0 4
 16
-b10100000000010011 P
-b1100 Q
+b10100000000010011 Q
+b1100 R
 #13000
 1,
 b11 '
-b11 D
+b11 E
 b0 *
 b0 B
 1+
@@ -339,33 +341,34 @@ b11100000110000000 (
 1"
 b10111 /
 b10111 @
-b10110100110000000 O
+b10110100110000000 P
 b1010 9
 b11 4
 b0 ;
 05
 06
-b10110100110000000 P
-b1101 Q
+b10110100110000000 Q
+b1101 R
 #14000
+1D
 b0 '
-b0 D
+b0 E
 0+
 0,
 b0 (
 0"
 b0 /
 b0 @
-b11100000110000000 O
+b11100000110000000 P
 11
 b0 9
-b11100000110000000 P
-b1110 Q
+b11100000110000000 Q
+b1110 R
 #15000
-b0 O
+b0 P
 0:
 01
 02
 b0 4
-b0 P
-b1111 Q
+b0 Q
+b1111 R

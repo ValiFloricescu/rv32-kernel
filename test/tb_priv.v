@@ -22,14 +22,18 @@ module tb_priv;
              .trap_val(trap_val), .mret_en(mret_en), .sret_en(sret_en),
              .trap_vec_o(trap_vec_o), .ret_pc_o(ret_pc_o), .priv_o(priv_o));
 
-    task wr(input [11:0] a, input [31:0] d);
+    task wr;
+        input [11:0] a;
+        input [31:0] d;
         begin
             @(negedge clk); addr=a; wdata=d; wr_en=1;
             @(negedge clk); wr_en=0;
         end
     endtask
 
-    task pulse_trap(input [31:0] c, input [31:0] epc);
+    task pulse_trap;
+        input [31:0] c;
+        input [31:0] epc;
         begin
             @(negedge clk); trap_en=1; trap_cause=c; trap_epc=epc; trap_val=0;
             @(negedge clk); trap_en=0;
@@ -50,7 +54,10 @@ module tb_priv;
         end
     endtask
 
-    task chk(input integer id, input [31:0] got, input [31:0] exp);
+    task chk;
+        input integer id;
+        input [31:0] got;
+        input [31:0] exp;
         begin
             if (got !== exp) begin
                 errors=errors+1;

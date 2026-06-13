@@ -188,8 +188,11 @@
 // ------------------------------------------------------------
 `define MISA_RV32IMA 32'h40141101
 
+`define CAUSE_INSTR_MISALIGN 32'd0
 `define CAUSE_ILLEGAL    32'd2
 `define CAUSE_BREAKPOINT 32'd3
+`define CAUSE_LOAD_MISALIGN  32'd4
+`define CAUSE_STORE_MISALIGN 32'd6
 `define CAUSE_ECALL_U    32'd8
 `define CAUSE_ECALL_S    32'd9
 `define CAUSE_ECALL_M    32'd11
