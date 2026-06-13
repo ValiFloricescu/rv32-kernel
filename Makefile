@@ -37,7 +37,7 @@ LOG := $(SIM_DIR)/$(TBNAME).log
 VCD := $(WAVE_DIR)/$(TBNAME).vcd
 
 # ============================================================
-.PHONY: all regress test run build wave sanity clean distclean help compliance
+.PHONY: all regress test run build wave sanity clean distclean help compliance synth-check
 
 all: regress               ## (implicit) ruleaza toata suita de regresie
 
@@ -79,6 +79,9 @@ compliance:                ## ruleaza conformitatea RISCOF (in container: I/M/A)
 	      --env=$$RISCV_ARCH_TEST/riscv-test-suite/env --no-browser ); \
 	done; \
 	echo ">>> CONFORMITATE $(COMPLIANCE_SUITES) OK <<<"
+
+synth-check:               ## verifica sintetizabilitatea (yosys: fara latch-uri)
+	@./scripts/check_synth.sh
 
 build:                     ## compileaza un singur test: $(TB)
 	@mkdir -p $(SIM_DIR) $(WAVE_DIR)

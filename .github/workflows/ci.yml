@@ -12,6 +12,14 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y iverilog
       - run: make            # esueaza automat daca vreun tb nu da ">>> PASS <<<"
 
+  # ---- Gardian de sintetizabilitate: esueaza la latch-uri sau erori de elaborare ----
+  synthesis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y yosys
+      - run: ./scripts/check_synth.sh
+
   # ---- Conformitate RISCOF pe imaginea proprie (gateaza pe I + M + A) ----
   riscof:
     runs-on: ubuntu-latest
