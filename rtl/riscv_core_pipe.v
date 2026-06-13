@@ -1,6 +1,17 @@
 `timescale 1ns / 1ps
 `include "riscv_defs.vh"
-
+// ============================================================
+//  riscv_core_pipe.v  -  Nucleu RV32IM PIPELINE pe 5 etaje
+//    forwarding + hazard load-use + flush branch + extensia M
+// ------------------------------------------------------------
+//  Doua tipuri de stall, ambele ingheata PC si IF/ID:
+//    - load-use : insereaza BULA in ID/EX (load-ul avanseaza)
+//    - muldiv   : TINE instructiunea M in EX (ID/EX hold) cat timp
+//                 unitatea muldiv lucreaza; EX/MEM primeste bula.
+//  Cele doua se exclud reciproc (in EX e o singura instructiune).
+//
+//  RESET ACTIV PE 0. Sintetizabil.
+// ============================================================
 module riscv_core_pipe #(
     parameter [31:0] RESET_PC = `RESET_PC   // vector de reset; implicit din riscv_defs.vh
 ) (
@@ -16,7 +27,7 @@ module riscv_core_pipe #(
 );
 
     // ============================================================
-    //  DECLARATII (registri de stare)
+    //  DECLARATII (regiStri de stare)
     // ============================================================
     reg  [31:0] pc;
     reg  [31:0] ifid_pc, ifid_pc4, ifid_instr;
@@ -43,6 +54,17 @@ module riscv_core_pipe #(
     reg                  memwb_reg_write_r;
     reg [4:0]            memwb_rd_r;
 
+    // --- interfata de retragere (RVFI-lite, doar pentru verificare/co-simulare) ---
+    // valid = slotul contine o instructiune reala retrasa (nu bula/squash);
+    // instr = cuvantul instructiunii retrase. Nu influenteaza logica functionala.
+    reg                  ifid_valid;
+    reg                  idex_valid;
+    reg [31:0]           idex_instr;
+    reg                  exmem_valid;
+    reg [31:0]           exmem_instr;
+    reg                  memwb_valid;
+    reg [31:0]           memwb_instr;
+
     // semnale partajate
     wire [31:0] wb_data;
     wire        memwb_reg_write;
@@ -53,8 +75,9 @@ module riscv_core_pipe #(
     wire [31:0] mul_result;
     wire        mul_busy, mul_done;
 
+    // stall de muldiv: tine instructiunea M in EX pana cand unitatea termina
     wire mul_stall   = idex_is_muldiv & ~mul_done;
-    
+    // orice stall ingheata PC + IF/ID
     wire stall_front = load_use_stall | mul_stall;
 
     // ============================================================
@@ -74,12 +97,15 @@ module riscv_core_pipe #(
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             ifid_pc <= 32'b0; ifid_pc4 <= 32'b0; ifid_instr <= `RV_NOP;
+            ifid_valid <= 1'b0;
         end else if (stall_front) begin
             // hold (load-use sau muldiv)
         end else if (ex_redirect) begin
             ifid_pc <= 32'b0; ifid_pc4 <= 32'b0; ifid_instr <= `RV_NOP;  // squash
+            ifid_valid <= 1'b0;
         end else begin
             ifid_pc <= pc; ifid_pc4 <= pc_plus4; ifid_instr <= if_instr;
+            ifid_valid <= 1'b1;
         end
     end
 
@@ -147,8 +173,11 @@ module riscv_core_pipe #(
             idex_pc <= 32'b0; idex_pc4 <= 32'b0;
             idex_rd <= 5'b0; idex_rs1 <= 5'b0; idex_rs2 <= 5'b0; idex_funct3 <= 3'b0;
             idex_is_csr <= 1'b0; idex_sys_ecall <= 1'b0; idex_sys_ebreak <= 1'b0; idex_sys_mret <= 1'b0; idex_csr_addr <= 12'b0;
+            idex_valid <= 1'b0; idex_instr <= `RV_NOP;
         end else if (mul_stall) begin
+            // TINE instructiunea M in EX (nu schimba nimic)
         end else if (load_use_stall || ex_redirect) begin
+            // bula: dezactiveaza efectele
             idex_reg_write <= 1'b0; idex_mem_read <= 1'b0; idex_mem_write <= 1'b0;
             idex_branch <= 1'b0; idex_jump <= 1'b0; idex_jalr <= 1'b0; idex_is_muldiv <= 1'b0;
             idex_alu_a_src <= 1'b0; idex_alu_b_src <= 1'b0;
@@ -157,6 +186,7 @@ module riscv_core_pipe #(
             idex_pc <= 32'b0; idex_pc4 <= 32'b0;
             idex_rd <= 5'b0; idex_rs1 <= 5'b0; idex_rs2 <= 5'b0; idex_funct3 <= 3'b0;
             idex_is_csr <= 1'b0; idex_sys_ecall <= 1'b0; idex_sys_ebreak <= 1'b0; idex_sys_mret <= 1'b0; idex_csr_addr <= 12'b0;
+            idex_valid <= 1'b0; idex_instr <= `RV_NOP;
         end else begin
             idex_reg_write <= id_reg_write; idex_mem_read <= id_mem_read;
             idex_mem_write <= id_mem_write; idex_branch <= id_branch;
@@ -168,6 +198,7 @@ module riscv_core_pipe #(
             idex_rd <= id_rd; idex_rs1 <= id_rs1; idex_rs2 <= id_rs2;
             idex_funct3 <= id_funct3;
             idex_is_csr <= id_is_csr; idex_sys_ecall <= id_sys_ecall; idex_sys_ebreak <= id_sys_ebreak; idex_sys_mret <= id_sys_mret; idex_csr_addr <= ifid_instr[31:20];
+            idex_valid <= ifid_valid; idex_instr <= ifid_instr;
         end
     end
 
@@ -227,7 +258,7 @@ module riscv_core_pipe #(
     wire [31:0] csr_wval  = (csr_op == 2'b01) ? csr_src
                           : (csr_op == 2'b10) ? (csr_rdata |  csr_src)
                           :                     (csr_rdata & ~csr_src);
-
+    // RW scrie mereu; RS/RC scriu doar daca sursa (rs1/zimm) != x0
     wire        csr_wr    = idex_is_csr & ((csr_op == 2'b01) | (idex_rs1 != 5'b0));
 
     // detectare trap / mret (gate cu ~mul_stall: o singura instr in EX)
@@ -248,6 +279,7 @@ module riscv_core_pipe #(
         .mtvec_o(csr_mtvec), .mepc_o(csr_mepc)
     );
 
+    // rezultatul scris mai departe: CSR, muldiv (op M) sau ALU
     wire [31:0] ex_result = idex_is_csr    ? csr_rdata
                           : idex_is_muldiv ? mul_result
                           :                  ex_alu_result;
@@ -269,6 +301,7 @@ module riscv_core_pipe #(
     wire [31:0] ex_pc_target    = idex_pc + idex_imm;
     wire [31:0] ex_jalr_target  = (ex_rs1_fwd + idex_imm) & ~32'b1;
 
+    //  redirect: branch/jump (ca pana acum) + trap (->mtvec) + mret (->mepc)
     assign ex_redirect    = (ex_branch_taken | idex_jump | ex_trap | ex_mret) & ~mul_stall;
     assign ex_redirect_pc = ex_trap ? csr_mtvec
                           : ex_mret ? csr_mepc
@@ -281,12 +314,14 @@ module riscv_core_pipe #(
             exmem_reg_write <= 1'b0; exmem_mem_read <= 1'b0; exmem_mem_write <= 1'b0;
             exmem_wb_sel <= `WB_ALU; exmem_alu_result <= 32'b0; exmem_rs2_data <= 32'b0;
             exmem_pc4 <= 32'b0; exmem_rd <= 5'b0; exmem_funct3 <= 3'b0;
+            exmem_valid <= 1'b0; exmem_instr <= `RV_NOP;
         end else begin
             exmem_reg_write <= idex_reg_write; exmem_mem_read <= idex_mem_read;
             exmem_mem_write <= idex_mem_write; exmem_wb_sel <= idex_wb_sel;
             exmem_alu_result <= ex_result;        // ALU sau muldiv
             exmem_rs2_data <= ex_rs2_fwd;
             exmem_pc4 <= idex_pc4; exmem_rd <= idex_rd; exmem_funct3 <= idex_funct3;
+            exmem_valid <= idex_valid; exmem_instr <= idex_instr;
         end
     end
 
@@ -343,10 +378,12 @@ module riscv_core_pipe #(
             memwb_reg_write_r <= 1'b0; memwb_wb_sel <= `WB_ALU;
             memwb_alu_result <= 32'b0; memwb_load_data <= 32'b0; memwb_pc4 <= 32'b0;
             memwb_rd_r <= 5'b0;
+            memwb_valid <= 1'b0; memwb_instr <= `RV_NOP;
         end else begin
             memwb_reg_write_r <= exmem_reg_write; memwb_wb_sel <= exmem_wb_sel;
             memwb_alu_result <= exmem_alu_result; memwb_load_data <= mem_load_data;
             memwb_pc4 <= exmem_pc4; memwb_rd_r <= exmem_rd;
+            memwb_valid <= exmem_valid; memwb_instr <= exmem_instr;
         end
     end
 

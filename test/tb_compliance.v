@@ -76,10 +76,17 @@ module tb_compliance;
     // ---- export semnatura ----
     task dump_signature;
         integer fd, a;
+        integer aligned_end;
         begin
+            // Spike aliniaza regiunea de semnatura la 16 octeti si umple cu zero;
+            // exportam la fel, ca semnaturile sa coincida ca lungime.
+            aligned_end = (`SIG_END + 15) & 32'hFFFFFFF0;
             fd = $fopen(`SIG_FILE, "w");
             for (a = `SIG_BEGIN; a < `SIG_END; a = a + 4)
                 $fwrite(fd, "%08x\n", mem[(a[31:2]) & (WORDS-1)]);
+            // padding de aliniere (cuvinte nescrise de test -> zero, ca la Spike)
+            for (a = `SIG_END; a < aligned_end; a = a + 4)
+                $fwrite(fd, "%08x\n", 32'h00000000);
             $fclose(fd);
             $display("[COMPLIANCE] semnatura exportata in %s", `SIG_FILE);
         end

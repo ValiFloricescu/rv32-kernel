@@ -23,7 +23,7 @@ hart0:
            warl:
               dependency_fields: []
               legal:
-                - extensions[25:0] bitmask [0x0001104, 0x0000000]
+                - extensions[25:0] bitmask [0x0001100, 0x0000000]
               wr_illegal:
                 - Unchanged
  
