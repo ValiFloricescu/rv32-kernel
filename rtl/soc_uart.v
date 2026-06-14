@@ -25,6 +25,7 @@ module soc_uart (
         end
     end
 
-    // LSR: THRE (bit5) + TEMT (bit6) mereu 1 => transmitatorul e gata
-    assign rdata = (off == 4'h5) ? 32'h0000_0060 : 32'b0;
+    // LSR (offset 5) traieste in cuvantul offset-urilor 4..7, pe octetul 1.
+    // Nucleul extrage octetul dupa addr[1:0], deci punem 0x60 pe lane-ul 1.
+    assign rdata = (off[3:2] == 2'b01) ? 32'h0000_6000 : 32'b0;
 endmodule

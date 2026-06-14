@@ -29,12 +29,13 @@ module soc_sim #(
     );
 
     reg [31:0] ram [0:RAM_WORDS-1];
+    localparam integer IDXW = $clog2(RAM_WORDS);
 
     wire        ram_sel  = (dmem_addr[31:28] == 4'h8);
     wire        uart_sel = (dmem_addr[31:28] == 4'h1);
     wire        plic_sel = (dmem_addr[31:24] == 8'h0C);
-    wire [15:0] ram_widx = dmem_addr[17:2];
-    wire [15:0] ram_ridx = imem_addr[17:2];
+    wire [IDXW-1:0] ram_widx = dmem_addr[IDXW+1:2];
+    wire [IDXW-1:0] ram_ridx = imem_addr[IDXW+1:2];
 
     assign imem_rdata = ram[ram_ridx];
 

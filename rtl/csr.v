@@ -76,6 +76,20 @@ module csr (
     assign trap_vec_o = to_s ? {stvec[31:2], 2'b00} : {mtvec[31:2], 2'b00};
     assign ret_pc_o   = sret_en ? sepc : mepc;
 
+    // CSR-uri prezente dar fara efect (citesc 0, scrieri ignorate): mstatush,
+    // contoare, envcfg, PMP. OpenSBI le acceseaza la boot; le acceptam ca sa nu
+    // dam illegal-instruction. Nucleul nu aplica PMP (acces complet oricum), iar
+    // sondarea PMP a OpenSBI vede 0 regiuni si nu se bazeaza pe el.
+    wire csr_warl0 =
+          (addr == 12'h310)                                 // mstatush
+       || (addr == 12'h306) || (addr == 12'h320)            // mcounteren, mcountinhibit
+       || (addr == 12'h30A) || (addr == 12'h31A)            // menvcfg, menvcfgh
+       || (addr == 12'h106) || (addr == 12'h10A)            // scounteren, senvcfg
+       || (addr[11:4] == 8'h3A)                             // pmpcfg0..15
+       || (addr[11:4] >= 8'h3B && addr[11:4] <= 8'h3E)      // pmpaddr0..63
+       || (addr == 12'hB00) || (addr == 12'hB02)            // mcycle, minstret
+       || (addr == 12'hB80) || (addr == 12'hB82);           // mcycleh, minstreth
+
     always @(*) begin
         addr_valid = 1'b1;
         case (addr)
@@ -103,7 +117,7 @@ module csr (
             `CSR_STVAL   : rdata = stval;
             `CSR_SIP     : rdata = sip_v;
             `CSR_SATP    : rdata = satp;
-            default      : begin rdata = 32'b0; addr_valid = 1'b0; end
+            default      : begin rdata = 32'b0; addr_valid = csr_warl0; end
         endcase
         if (rd_en && priv < addr[9:8])      addr_valid = 1'b0;
         if (wr_en && addr[11:10] == 2'b11)  addr_valid = 1'b0;

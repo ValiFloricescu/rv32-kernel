@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: BSD-2-Clause
+config PLATFORM_VALIF
+	bool
+	select IPI_MSWI
+	select SERIAL_UART8250
+	select TIMER_MTIMER
+	default y
