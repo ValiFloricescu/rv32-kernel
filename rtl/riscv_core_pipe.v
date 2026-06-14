@@ -12,7 +12,9 @@ module riscv_core_pipe #(
     output wire [31:0] dmem_wdata,
     output wire [3:0]  dmem_wstrb,
     output wire        dmem_we,
-    input  wire [31:0] dmem_rdata
+    input  wire [31:0] dmem_rdata,
+    output wire        dmem_re,         // strobe citire date (pentru periferice cu efect la citire)
+    input  wire        ext_irq          // meip extern (de la PLIC)
 );
 
     // ============================================================
@@ -418,7 +420,7 @@ module riscv_core_pipe #(
         .trap_en(ex_trap), .trap_cause(ex_trap_cause),
         .trap_epc(idex_pc), .trap_val(ex_trap_val),
         .mret_en(ex_mret), .sret_en(ex_sret), .mtip_i(clint_mtip),
-        .msip_i(clint_msip), .meip_i(1'b0),
+        .msip_i(clint_msip), .meip_i(ext_irq),
         .trap_vec_o(csr_trap_vec), .ret_pc_o(csr_ret_pc), .priv_o(csr_priv),
         .irq_pending(irq_pending), .irq_cause(irq_cause), .satp_o(csr_satp)
     );
@@ -524,6 +526,7 @@ module riscv_core_pipe #(
     assign dmem_wdata = exmem_is_amo ? amo_wval :
                         exmem_is_sc  ? exmem_rs2_data : mem_store_data;
     assign dmem_we    = walker_bus ? 1'b0 : ((exmem_mem_write | exmem_is_amo | sc_ok) & ~clint_sel);
+    assign dmem_re    = ~walker_bus & exmem_valid & (exmem_mem_read | exmem_is_amo | exmem_is_lr);
     assign dmem_wstrb = walker_bus ? 4'b0000 :
                         (exmem_is_amo | sc_ok) ? 4'b1111 :
                         exmem_mem_write       ? mem_store_strb : 4'b0000;

@@ -1,5 +1,19 @@
 `timescale 1ns / 1ps
-
+// ============================================================
+//  soc_top.v  -  Top SoC: riscv_core_pipe + axi4lite_mem
+// ------------------------------------------------------------
+//  Acesta e blocul care se conecteaza la PS-ul Zynq (PYNQ-Z2):
+//
+//    - portul S_AXI (slave AXI4-Lite) merge la interconectul PS;
+//      PS-ul incarca programul in memorie si citeste rezultatele;
+//    - cpu_resetn e controlat de PS (ex. printr-un GPIO / registru):
+//      tine CPU-ul in reset cat incarca programul, apoi il porneste.
+//
+//  CPU-ul si AXI partajeaza aceeasi memorie (von Neumann). Resetul
+//  nucleului = rst_n de sistem SI cpu_resetn de la PS.
+//
+//  RESET ACTIV PE 0.  Sintetizabil.
+// ============================================================
 module soc_top #(
     parameter integer ADDR_WIDTH = 12
 )(
@@ -42,7 +56,8 @@ module soc_top #(
         .clk(clk), .rst_n(core_rst_n),
         .imem_addr(imem_addr), .imem_rdata(imem_rdata),
         .dmem_addr(dmem_addr), .dmem_wdata(dmem_wdata),
-        .dmem_wstrb(dmem_wstrb), .dmem_we(dmem_we), .dmem_rdata(dmem_rdata)
+        .dmem_wstrb(dmem_wstrb), .dmem_we(dmem_we), .dmem_rdata(dmem_rdata),
+        .ext_irq(1'b0)
     );
 
     axi4lite_mem #(.ADDR_WIDTH(ADDR_WIDTH)) u_mem (

@@ -57,7 +57,7 @@ module tb_core_pipe_full;
         .clk(clk), .rst_n(rst_n),
         .imem_addr(imem_addr), .imem_rdata(imem_rdata),
         .dmem_addr(dmem_addr), .dmem_wdata(dmem_wdata),
-        .dmem_wstrb(dmem_wstrb), .dmem_we(dmem_we), .dmem_rdata(dmem_rdata)
+        .dmem_wstrb(dmem_wstrb), .dmem_we(dmem_we), .dmem_rdata(dmem_rdata), .ext_irq(1'b0)
     );
     sim_imem_c u_imem (.addr(imem_addr), .rdata(imem_rdata));
     sim_dmem_c u_dmem (.clk(clk), .addr(dmem_addr), .wdata(dmem_wdata),
