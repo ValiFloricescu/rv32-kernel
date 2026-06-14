@@ -25,7 +25,7 @@ module tb_mmu;
     always #5 clk = ~clk;
 
     mmu dut (.clk(clk), .rst_n(rst_n), .req(req), .vaddr(vaddr), .access(access),
-             .satp(satp), .priv(priv), .sum(sum), .mxr(mxr),
+             .satp(satp), .priv(priv), .sum(sum), .mxr(mxr), .flush(1'b0),
              .done(done), .paddr(paddr), .fault(fault), .fault_cause(fault_cause),
              .mem_req(mem_req), .mem_addr(mem_addr), .mem_rdata(mem_rdata), .mem_ack(mem_ack));
 

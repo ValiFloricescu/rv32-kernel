@@ -334,12 +334,17 @@ module riscv_core_pipe #(
                                 | exmem_is_lr | exmem_is_sc) & exmem_valid;
     wire        walker_bus = mmu_walking & ~mem_data_acc;
 
+    wire        ex_sfence  = idex_valid & (idex_instr[6:0] == 7'b1110011)
+                           & (idex_instr[14:12] == 3'b000) & (idex_instr[31:25] == 7'b0001001);
+    wire        ex_satp_wr = csr_wr & (idex_csr_addr == `CSR_SATP);
+    wire        mmu_flush  = (ex_sfence | ex_satp_wr) & ~ex_trap & ~mul_stall & ~mmu_stall;
+
     mmu u_mmu (
         .clk(clk), .rst_n(rst_n),
         .req(ex_start | if_start),
         .vaddr(serving_ex ? ex_alu_result : pc),
         .access(serving_ex ? mmu_acc : 2'd0),
-        .satp(csr_satp), .priv(csr_priv), .sum(1'b0), .mxr(1'b0),
+        .satp(csr_satp), .priv(csr_priv), .sum(1'b0), .mxr(1'b0), .flush(mmu_flush),
         .done(mmu_done), .paddr(mmu_paddr), .fault(mmu_fault), .fault_cause(mmu_fault_cause),
         .mem_req(mmu_mem_req), .mem_addr(mmu_mem_addr),
         .mem_rdata(dmem_rdata), .mem_ack(mmu_mem_req & walker_bus)
