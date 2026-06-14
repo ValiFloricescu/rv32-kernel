@@ -1,0 +1,64 @@
+`timescale 1ns / 1ps
+`include "riscv_defs.vh"
+
+`ifndef DUMP_FILE
+ `define DUMP_FILE "waveform/tb_msip.vcd"
+`endif
+`ifndef PROG_HEX
+ `define PROG_HEX "sw/prog_msip.hex"
+`endif
+
+module tb_msip;
+    reg clk=0, rst_n;
+    always #5 clk=~clk;
+
+    wire [31:0] imem_addr, imem_rdata;
+    wire [31:0] dmem_addr, dmem_wdata, dmem_rdata;
+    wire [3:0]  dmem_wstrb;
+    wire        dmem_we;
+
+    reg [31:0] mem [0:4095];
+    assign imem_rdata = mem[imem_addr[13:2]];
+    assign dmem_rdata = mem[dmem_addr[13:2]];
+    always @(posedge clk) if (dmem_we) begin
+        if (dmem_wstrb[0]) mem[dmem_addr[13:2]][7:0]   <= dmem_wdata[7:0];
+        if (dmem_wstrb[1]) mem[dmem_addr[13:2]][15:8]  <= dmem_wdata[15:8];
+        if (dmem_wstrb[2]) mem[dmem_addr[13:2]][23:16] <= dmem_wdata[23:16];
+        if (dmem_wstrb[3]) mem[dmem_addr[13:2]][31:24] <= dmem_wdata[31:24];
+    end
+
+    riscv_core_pipe dut (
+        .clk(clk), .rst_n(rst_n),
+        .imem_addr(imem_addr), .imem_rdata(imem_rdata),
+        .dmem_addr(dmem_addr), .dmem_wdata(dmem_wdata),
+        .dmem_wstrb(dmem_wstrb), .dmem_we(dmem_we), .dmem_rdata(dmem_rdata)
+    );
+
+    integer i, errors=0;
+    task chk;
+        input integer id;
+        input [31:0] got, exp;
+        begin
+            if (got !== exp) begin
+                errors=errors+1;
+                $display("  FAIL %0d: got=%h exp=%h", id, got, exp);
+            end
+        end
+    endtask
+
+    initial begin
+        $dumpfile(`DUMP_FILE); $dumpvars(0, tb_msip);
+        for (i=0;i<4096;i=i+1) mem[i]=32'b0;
+        $readmemh(`PROG_HEX, mem);
+
+        rst_n=0; repeat(4) @(negedge clk); rst_n=1;
+        repeat(150) @(negedge clk);
+
+        chk(1, mem[32'h100>>2], 32'h8000_0003);   // mcause = intrerupere software M
+        chk(2, mem[32'h104>>2], 32'h0000_ABCD);   // handler-ul a rulat
+
+        if (errors==0) $display("[MSIP] >>> PASS <<< (software interrupt M via CLINT)");
+        else           $display("[MSIP] >>> FAIL <<< (%0d erori)", errors);
+        $finish;
+    end
+endmodule

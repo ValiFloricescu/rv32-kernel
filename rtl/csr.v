@@ -19,6 +19,8 @@ module csr (
     input  wire        mret_en,
     input  wire        sret_en,
     input  wire        mtip_i,
+    input  wire        msip_i,
+    input  wire        meip_i,
 
     output wire [31:0] trap_vec_o,
     output wire [31:0] ret_pc_o,
@@ -41,7 +43,10 @@ module csr (
     wire [31:0] sie_v   = mie_r & mideleg;
     wire [31:0] sip_v   = mip_r & mideleg;
 
-    wire [31:0] mip_eff = (mip_r & ~(32'b1 << 7)) | ({31'b0, mtip_i} << 7);
+    wire [31:0] hw_mask = (32'b1 << 3) | (32'b1 << 7) | (32'b1 << 11);
+    wire [31:0] hw_bits = ({31'b0, msip_i} << 3) | ({31'b0, mtip_i} << 7)
+                        | ({31'b0, meip_i} << 11);
+    wire [31:0] mip_eff = (mip_r & ~hw_mask) | hw_bits;
     wire [31:0] pend    = mip_eff & mie_r;
     wire        m_en    = (priv != `PRIV_M) | mie;
     wire        s_en    = (priv == `PRIV_U) | ((priv == `PRIV_S) & sie);

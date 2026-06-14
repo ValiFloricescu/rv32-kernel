@@ -418,6 +418,7 @@ module riscv_core_pipe #(
         .trap_en(ex_trap), .trap_cause(ex_trap_cause),
         .trap_epc(idex_pc), .trap_val(ex_trap_val),
         .mret_en(ex_mret), .sret_en(ex_sret), .mtip_i(clint_mtip),
+        .msip_i(clint_msip), .meip_i(1'b0),
         .trap_vec_o(csr_trap_vec), .ret_pc_o(csr_ret_pc), .priv_o(csr_priv),
         .irq_pending(irq_pending), .irq_cause(irq_cause), .satp_o(csr_satp)
     );
@@ -511,12 +512,12 @@ module riscv_core_pipe #(
     wire        clint_sel  = exmem_valid & (exmem_mem_read | exmem_mem_write)
                            & (exmem_alu_result[31:16] == `CLINT_HI);
     wire [31:0] clint_rdata;
-    wire        clint_mtip;
+    wire        clint_mtip, clint_msip;
     clint u_clint (
         .clk(clk), .rst_n(rst_n),
         .sel(clint_sel), .we(clint_sel & exmem_mem_write),
         .off(exmem_alu_result[15:0]), .wdata(exmem_rs2_data),
-        .rdata(clint_rdata), .mtip(clint_mtip)
+        .rdata(clint_rdata), .mtip(clint_mtip), .msip(clint_msip)
     );
 
     assign dmem_addr  = walker_bus ? mmu_mem_addr : exmem_alu_result;
