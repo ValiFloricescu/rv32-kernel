@@ -74,7 +74,10 @@ module riscv_core_pipe #(
     // stall de muldiv: tine instructiunea M in EX pana cand unitatea termina
     wire mul_stall   = idex_is_muldiv & ~mul_done;
     // orice stall ingheata PC + IF/ID
-    wire if_xlate_pending = mmu_active & (fstate != F_RDY);
+    // traducerea fetch e valabila doar daca paddr-ul gata corespunde PC-ului curent
+    // (dupa un salt, PC-ul se schimba dar fstate poate ramane un ciclu in F_RDY cu paddr vechi)
+    wire fpaddr_ok = (fstate == F_RDY) & (fpc == pc);
+    wire if_xlate_pending = mmu_active & ~fpaddr_ok;
     wire stall_front = load_use_stall | mul_stall | mmu_stall | if_xlate_pending;
 
     // ============================================================
@@ -89,7 +92,7 @@ module riscv_core_pipe #(
         else if (!stall_front) pc <= next_pc;
     end
 
-    assign imem_addr = (mmu_active & fstate == F_RDY) ? fpaddr : pc;
+    assign imem_addr = (mmu_active & fpaddr_ok) ? fpaddr : pc;
     wire [31:0] if_instr = imem_rdata;
 
     always @(posedge clk or negedge rst_n) begin
@@ -316,7 +319,7 @@ module riscv_core_pipe #(
     localparam X_IDLE = 2'd0, X_WALK = 2'd1, X_RDY = 2'd2;
     localparam F_IDLE = 2'd0, F_WALK = 2'd1, F_RDY = 2'd2;
     reg  [1:0]  xstate, fstate;
-    reg  [31:0] xpaddr, fpaddr;
+    reg  [31:0] xpaddr, fpaddr, fpc;
     reg         xfault, ffault;
     reg  [3:0]  xcause;
     wire        mmu_done, mmu_fault, mmu_mem_req;
@@ -369,14 +372,14 @@ module riscv_core_pipe #(
     end
 
     always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin fstate <= F_IDLE; ffault <= 1'b0; fpaddr <= 32'b0; end
+        if (!rst_n) begin fstate <= F_IDLE; ffault <= 1'b0; fpaddr <= 32'b0; fpc <= 32'b0; end
         else case (fstate)
-            F_IDLE: if (if_start) fstate <= F_WALK;
+            F_IDLE: if (if_start) begin fstate <= F_WALK; fpc <= pc; end
             F_WALK: if (mmu_done & ~serving_ex) begin
                 fpaddr <= mmu_paddr; ffault <= mmu_fault;
                 fstate <= F_RDY;
             end
-            F_RDY:  if (ex_redirect | fetch_consumed) fstate <= F_IDLE;
+            F_RDY:  if (ex_redirect | fetch_consumed | (fpc != pc)) fstate <= F_IDLE;
             default: fstate <= F_IDLE;
         endcase
     end
@@ -431,9 +434,10 @@ module riscv_core_pipe #(
     // adresa tradusa intra in MEM in locul celei virtuale
     wire [31:0] ex_mem_addr = (need_xlate & xstate == X_RDY) ? xpaddr : ex_result;
 
-    assign ex_redirect    = (ex_take_pc | ex_trap | ex_mret | ex_sret) & ~mul_stall;
+    assign ex_redirect    = (ex_take_pc | ex_trap | ex_mret | ex_sret | mmu_flush) & ~mul_stall;
     assign ex_redirect_pc = ex_trap ? csr_trap_vec
                           : (ex_mret | ex_sret) ? csr_ret_pc
+                          : mmu_flush ? idex_pc4
                           :                       ex_target;
 
     // registru EX/MEM (bula la mul_stall sau cand instructiunea ia trap)
